@@ -65,7 +65,7 @@ UUID 必须为规范的连字符十六进制格式；接受大写并转小写。
 
 ## 写入与接入
 
-`Writer::open(path)` 获取 `.sqlite.lock` 生命周期独占文件锁；锁文件不会删除，进程退出由 OS 释放锁。
+`Writer::open(path)` 获取 `.sqlite.lock` 生命周期独占文件锁；销毁Writer时先关闭SQLite，再显式解锁，避免并发启动子进程时临时继承的文件描述符延长锁的生命周期。锁文件不会删除，进程异常退出时由OS回收文件描述符。
 同一 DB 只允许一个 Writer，第二个服务或导入进程立即失败。数据库启用 WAL、foreign_keys、
 2 秒 busy timeout、512 KiB SQLite 页缓存、禁用 mmap、临时结果写磁盘。Reader 使用只读连接与 query_only。
 

@@ -38,8 +38,19 @@ fn timestamp(value: i64) -> Result<String> {
 
 /// Sole write capability. Keep this object on the refresh OS thread for its entire lifetime.
 pub struct Writer {
+    // Fields drop in declaration order: close SQLite before releasing the writer lock.
     conn: Connection,
-    _lock: File,
+    _lock: WriterLock,
+}
+
+struct WriterLock(File);
+
+impl Drop for WriterLock {
+    fn drop(&mut self) {
+        // A concurrent process spawn may temporarily inherit the descriptor.
+        // Closing only our File would keep flock held until that child execs.
+        let _ = FileExt::unlock(&self.0);
+    }
 }
 impl Writer {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
@@ -57,6 +68,7 @@ impl Writer {
             .open(lock_path)?;
         lock.try_lock_exclusive()
             .context("card-cache writer already running (exclusive lock)")?;
+        let lock = WriterLock(lock);
         let conn = Connection::open(path)?;
         configure(&conn)?;
         let mode: String = conn.query_row("PRAGMA journal_mode=WAL", [], |r| r.get(0))?;
@@ -394,4 +406,28 @@ fn read_status(conn: &Connection) -> Result<Status> {
         refresh_state: state,
         last_error: error,
     })
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn writer_drop_releases_lock_while_duplicate_descriptor_remains_open() {
+        let directory = tempfile::TempDir::new().unwrap();
+        let path = directory.path().join("cards.sqlite");
+        let writer = Writer::open(&path).unwrap();
+        // dup and fork retain the same open file description and flock.
+        // Keep a duplicate alive to reproduce the pre-exec inheritance window
+        // deterministically, without forking a multithreaded test process.
+        let inherited = writer._lock.0.try_clone().unwrap();
+        assert!(Writer::open(&path).is_err());
+
+        drop(writer);
+        let reopened = Writer::open(&path).unwrap();
+        drop(inherited);
+        assert!(Writer::open(&path).is_err());
+        drop(reopened);
+        assert!(Writer::open(path).is_ok());
+    }
 }
