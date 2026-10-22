@@ -4,7 +4,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev m
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 COPY crates/card-cache ./crates/card-cache
-RUN cargo build --release --locked -p mtga-card-cache --jobs 2 \
+ARG CARGO_MIRROR=
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    if [ -n "$CARGO_MIRROR" ]; then \
+      mkdir -p .cargo && printf '[source.crates-io]\nreplace-with = "build-mirror"\n[source.build-mirror]\nregistry = "%s"\n' "$CARGO_MIRROR" > .cargo/config.toml; \
+    fi \
+    && cargo build --release --locked -p mtga-card-cache --jobs 2 \
     && strip target/release/mtga-card-cache
 
 FROM debian:bookworm-slim

@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        CARGO_MIRROR: ${CARGO_MIRROR:-}
     restart: unless-stopped
     environment:
       CARD_CACHE_LISTEN: 0.0.0.0:17317
