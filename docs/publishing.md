@@ -34,7 +34,7 @@ bun run zip:store
 - `https://17lands.syzroy.com/*`：按公开卡牌ID批量查询中文资料及卡库状态。
 - `https://images.mtgch.com/*`、`https://cards.scryfall.io/*`：下载及缓存功能所需卡图。
 - 远程代码：无。所有可执行代码随扩展打包；远端只提供JSON资料和图片。
-- 数据类别：如实披露网站内容及所读取的卡图资源/相关浏览活动；这不是完整浏览历史或私人轮抽记录。不能因卡牌ID公开就申报“完全不处理数据”。具体以当前代码及[隐私政策](privacy.md)为准。
+- 数据类别：Website content为所读取的卡牌内容，Web history按卡图资源及相关浏览活动作保守披露，Location仅指服务基础设施处理的IP地址；不读取历史记录数据库、页面访问列表或GPS，也不做地理定位。不能因卡牌ID公开就申报“完全不处理数据”。具体以当前代码及[隐私政策](privacy.md)为准。
 - 不出售，不作广告、信用评估或无关用途；符合Limited Use。
 
 上传后填写Store listing、Privacy、Distribution及Test instructions，核对所有必填项后提交审核。开发者账号的条款、付款、身份验证或CAPTCHA由账号持有人完成；不要保存凭据到仓库。Google审核与上架时间不能由构建或上传成功推断，须回读实际状态。
