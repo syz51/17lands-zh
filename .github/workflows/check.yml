@@ -4,12 +4,16 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
 
 permissions:
   contents: read
 
 jobs:
   rust:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -18,6 +22,7 @@ jobs:
       - run: cargo +stable clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo +stable test --workspace --locked
   extension:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,7 +40,60 @@ jobs:
       - run: WXT_API_ORIGIN=https://17lands.syzroy.com bun run build
   container:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      TRIVY_NO_PROGRESS: 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - run: docker build --tag 17lands-zh-ci .
+      - name: Configure scan paths
+        run: |
+          echo "TRIVY_CACHE_DIR=$RUNNER_TEMP/trivy-cache" >> "$GITHUB_ENV"
+          echo "SCAN_REPORTS=$RUNNER_TEMP/trivy-reports" >> "$GITHUB_ENV"
+      - uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+        with:
+          version: v0.76.1
+          path: ${{ runner.temp }}/scanner
+      - name: Scan Dockerfile configuration
+        id: config-scan
+        run: |
+          mkdir -p "$SCAN_REPORTS"
+          trivy config --misconfig-scanners dockerfile \
+            --skip-dirs .git --skip-dirs target --skip-dirs extensions \
+            --format json --output "$SCAN_REPORTS/dockerfile.json" .
+      # The stripped Rust executable has no cargo-auditable metadata, so image
+      # scanning alone cannot inventory its statically linked Cargo dependencies.
+      - name: Scan Rust dependencies
+        id: rust-scan
+        run: |
+          trivy fs --scanners vuln \
+            --skip-dirs .git --skip-dirs target --skip-dirs extensions \
+            --format json --output "$SCAN_REPORTS/rust-dependencies.json" .
+      - run: docker build --pull --tag 17lands-zh-ci .
       - run: docker run --rm 17lands-zh-ci --help
+      - name: Scan runtime image
+        id: image-scan
+        run: |
+          trivy image --image-src docker --scanners vuln \
+            --format json --output "$SCAN_REPORTS/image.json" 17lands-zh-ci
+      - name: Reject high or critical Dockerfile misconfigurations
+        if: ${{ !cancelled() && steps.config-scan.outcome == 'success' }}
+        run: trivy convert --severity HIGH,CRITICAL --exit-code 1 "$SCAN_REPORTS/dockerfile.json"
+      - name: Reject fixable high or critical Rust vulnerabilities
+        if: ${{ !cancelled() && steps.rust-scan.outcome == 'success' }}
+        run: |
+          trivy fs --scanners vuln --skip-db-update \
+            --skip-dirs .git --skip-dirs target --skip-dirs extensions \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .
+      - name: Reject fixable high or critical image vulnerabilities
+        if: ${{ !cancelled() && steps.image-scan.outcome == 'success' }}
+        run: |
+          trivy image --image-src docker --scanners vuln --skip-db-update \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 17lands-zh-ci
+      - name: Keep complete scan reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: container-security-reports
+          path: ${{ env.SCAN_REPORTS }}/*.json
+          retention-days: 7
+          if-no-files-found: warn
