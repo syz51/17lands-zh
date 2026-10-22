@@ -2,6 +2,10 @@
 
 在17Lands Mock Draft、回放和已选牌区域阅读中文卡图。WXT浏览器扩展通过本机或远程Rust服务读取中文资料，SQLite和浏览器持久缓存减少重复下载；保留原站英文卡牌身份与选牌操作。
 
+![17Lands Mock Draft 显示中文卡图](docs/images/mock-draft-zh.jpg)
+
+Mock Draft中文卡图示例；实际覆盖取决于可用中文资料，来源与权利说明见下文。
+
 ## 快速开始
 
 自行运行卡库需要Rust 1.88或更新版本；扩展构建需要Bun及Chrome/Edge。已有远程卡库时，只需构建扩展。服务可前台运行于macOS和Linux；macOS另提供用户LaunchAgent自启动。
