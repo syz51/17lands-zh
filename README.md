@@ -81,17 +81,9 @@ macOS可先停止前台serve，再执行：
 - 上游会收到服务的公开资料请求；图源会收到所加载图片的公开卡牌ID。图片按需下载，不附带全库图片。
 - Firefox MV3可构建，但实际运行尚未验收；Safari未提供包装。
 
-## 开发
+## 参与开发
 
-```console
-cargo fmt --all --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace --locked
-```
-
-扩展目录中运行`bun run typecheck`、`bun test`、`bun run build`和`bun run build:firefox`。默认测试不枚举上游；live测试被显式忽略，避免每次CI触发全量抓取。网络目录请求有上限及有限重试，不重试429。
-
-贡献流程见[CONTRIBUTING.md](CONTRIBUTING.md)，安全问题请按[SECURITY.md](SECURITY.md)私密报告。
+开发环境、检查命令、PR流程及CI漏洞扫描见[贡献说明](CONTRIBUTING.md)，仓库开发约定见[AGENTS.md](AGENTS.md)。安全问题请按[SECURITY.md](SECURITY.md)私密报告。
 
 ## 许可与第三方权利
 
@@ -120,5 +112,6 @@ cargo test --workspace --locked
 | 扩展构建与类型检查 | [WXT](https://github.com/wxt-dev/wxt)、[TypeScript](https://github.com/microsoft/TypeScript) |
 | JavaScript工具链与类型定义 | [Bun](https://github.com/oven-sh/bun)、[@types/bun / DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/bun) |
 | DOM测试 | [Happy DOM](https://github.com/capricorn86/happy-dom) |
+| 容器与依赖安全检查 | [Trivy](https://github.com/aquasecurity/trivy)、[setup-trivy](https://github.com/aquasecurity/setup-trivy) |
 
-上表列出直接依赖及相关运行时、测试工具；具体版本与传递依赖由[`Cargo.lock`](Cargo.lock)及[`bun.lock`](extensions/17lands-zh/bun.lock)固定。各项目的许可证以其源仓库及发行包为准；[SQLite的版权说明](https://sqlite.org/copyright.html)单独列出其公有领域声明。
+上表列出直接依赖及相关运行时、测试工具；Rust与扩展依赖版本由[`Cargo.lock`](Cargo.lock)及[`bun.lock`](extensions/17lands-zh/bun.lock)固定，CI工具版本与action提交固定在[工作流](.github/workflows/check.yml)。各项目的许可证以其源仓库及发行包为准；[SQLite的版权说明](https://sqlite.org/copyright.html)单独列出其公有领域声明。

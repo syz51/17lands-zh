@@ -10,6 +10,10 @@ Rust要求1.88以上，扩展使用Bun及`bun.lock`。遵守[AGENTS.md](AGENTS.m
 
 CI在Ubuntu执行Rust、扩展和Docker检查；PR触发一次检查，合并到main后再验证。macOS安装器需在实际macOS环境单独验证，Linux CI不覆盖该平台路径。
 
+`container`检查还使用Trivy扫描Dockerfile配置、Cargo锁定依赖及最终运行镜像；拉取当前基础镜像后构建。HIGH/CRITICAL配置问题，以及存在修复版本的HIGH/CRITICAL依赖或镜像漏洞使检查失败；其他严重程度及尚无修复版本的问题仍保存在完整JSON报告中，不表示已豁免。报告为`container-security-reports` artifact，保留7天。每周一03:17 UTC另执行一次容器构建与扫描，也可手动触发工作流；这些检查不部署服务。
+
+扫描数据库下载或工具执行失败同样使CI失败，不把“未能扫描”当成“没有漏洞”。更新扫描器时同步审阅固定的setup-trivy action提交与Trivy版本。最终镜像内的Rust程序未嵌入cargo-auditable清单，因此另扫Cargo.lock；新构建的扫描结果不能替代对正在运行的旧镜像的检查。需要忽略误报时，提供受影响性证据、负责人及复查期限，不为获得绿色CI直接屏蔽发现。
+
 Rust变更运行：
 
 ```console
@@ -27,6 +31,8 @@ bun test
 bun run build
 bun run build:firefox
 ```
+
+在扩展目录中，`bun run dev`进入WXT开发流程；`bun run zip`和`bun run zip:firefox`分别生成Chrome及Firefox分发包。
 
 涉及网络地址或权限时，还需按[部署说明](docs/deployment.md)构建远程模式。涉及MV3后台、图片解码、存储或页面行为时，使用真实扩展验证并说明浏览器和结果；fixture或构建成功不能代替运行验收。Docker变更需构建镜像并验证CLI入口；测试默认不抓取上游全量资料，live测试仅在明确需要时运行。
 

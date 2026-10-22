@@ -14,15 +14,7 @@ Firefox 包可通过 `bun run build:firefox` 构建；临时加载时在 `about:
 
 ## 开发与检查
 
-```sh
-bun install --frozen-lockfile
-bun run typecheck
-bun test
-bun run build
-bun run zip
-```
-
-`bun run dev` 使用 WXT 的开发流程。`bun.lock` 固定依赖；没有前端框架或运行时服务器依赖。
+开发、构建、打包与验证命令统一见[贡献说明](../../CONTRIBUTING.md#开发与验证)，开发约定见[根目录AGENTS.md](../../AGENTS.md)。`bun.lock`固定依赖；没有前端框架或运行时服务器依赖。
 
 ## 行为与范围
 
@@ -41,6 +33,6 @@ bun run zip
 
 ## 验证与限制
 
-自动测试覆盖映射、换图竞态、动态节点、关闭恢复、阅读面板生命周期、消息校验、批处理、持久缓存、ETag/revision、原生fetch接收者、解码先于缓存、坏图恢复及 API origin 验证。运行方式见上方开发命令。
+自动测试覆盖映射、换图竞态、动态节点、关闭恢复、阅读面板生命周期、消息校验、批处理、持久缓存、ETag/revision、原生fetch接收者、解码先于缓存、坏图恢复及 API origin 验证。运行方式见[贡献说明](../../CONTRIBUTING.md#开发与验证)。
 
 `tests/preview-server.ts`是视觉夹具；修改MV3后台、存储或图片解码时，需在真实扩展中验证。Firefox目前仅完成构建，实际运行尚未验收；构建通过不代表所有浏览器、系列及正反面均已覆盖。
