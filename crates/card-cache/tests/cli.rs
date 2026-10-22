@@ -118,3 +118,16 @@ fn lifecycle_dry_runs_have_no_filesystem_or_launchctl_side_effects() -> Result<(
     }
     Ok(())
 }
+
+#[test]
+fn public_listen_requires_explicit_host_policy_before_opening_database() -> Result<()> {
+    let home = tempfile::tempdir()?;
+    let output = cli(home.path())
+        .env_remove("CARD_CACHE_ALLOWED_HOSTS")
+        .args(["serve", "--listen", "0.0.0.0:17317"])
+        .output()?;
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("requires explicit --allowed-hosts"));
+    assert_eq!(fs::read_dir(home.path())?.count(), 0);
+    Ok(())
+}

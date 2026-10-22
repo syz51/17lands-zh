@@ -196,6 +196,49 @@ async fn etags_match_representation_and_change_atomically_with_generation() {
     assert_eq!(changed["card"]["english_name"], "new");
     drop(checked);
 }
+
+#[tokio::test]
+async fn proxy_hosts_must_be_explicit_and_do_not_enable_cors_or_writes() {
+    let (dir, _writer, _) = setup(true);
+    let app = http::router_with_hosts(
+        ReadPool::open(dir.path().join("cards.sqlite"), 1).unwrap(),
+        &["cards.example.com".into()],
+    )
+    .unwrap();
+    for (host, expected) in [
+        ("cards.example.com", StatusCode::OK),
+        ("CARDS.EXAMPLE.COM", StatusCode::OK),
+        ("127.0.0.1:17317", StatusCode::OK),
+        ("other.example.com", StatusCode::BAD_REQUEST),
+    ] {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/status")
+                    .header(header::HOST, host)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), expected);
+        assert!(
+            !response
+                .headers()
+                .contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+        );
+    }
+    for host in ["*", "user@cards.example.com", "cards.example.com/path", ""] {
+        assert!(
+            http::router_with_hosts(
+                ReadPool::open(dir.path().join("cards.sqlite"), 1).unwrap(),
+                &[host.into()]
+            )
+            .is_err()
+        );
+    }
+}
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn sixteen_simultaneous_normal_requests_all_succeed() {
     let (_dir, _writer, app) = setup(true);

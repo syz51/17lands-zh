@@ -1,4 +1,6 @@
-import { MAX_IMAGE_BYTES, MAX_IMAGE_CACHE_BYTES, MAX_IMAGES, MAX_METADATA, boundedBytes, type Card, type ServiceStatus } from './cache-contract';
+import { API_ORIGIN, MAX_IMAGE_BYTES, MAX_IMAGE_CACHE_BYTES, MAX_IMAGES, MAX_METADATA, boundedBytes, type Card, type ServiceStatus } from './cache-contract';
+
+export const METADATA_DB_NAME = API_ORIGIN === 'http://127.0.0.1:17317' ? '17lands-zh-metadata' : `17lands-zh-metadata@${API_ORIGIN}`;
 
 export type MetadataEntry = { id: string; card: Card | null; revision: string; expires: number; used: number; etag: string | null };
 export type Control = { status: ServiceStatus; nextAttempt: number };
@@ -15,7 +17,7 @@ export class IndexedMetadataStore implements MetadataStore {
   private db?: Promise<IDBDatabase>;
   private open() {
     return this.db ??= new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open('17lands-zh-metadata', 1);
+      const request = indexedDB.open(METADATA_DB_NAME, 1);
       request.onupgradeneeded = () => {
         const db = request.result;
         db.createObjectStore('cards', { keyPath: 'id' }).createIndex('used', 'used');

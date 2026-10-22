@@ -1,0 +1,8 @@
+**
+!Cargo.toml
+!Cargo.lock
+!crates/
+!crates/card-cache/
+!crates/card-cache/Cargo.toml
+!crates/card-cache/src/
+!crates/card-cache/src/**

@@ -74,3 +74,7 @@ cargo test --workspace --locked
 扩展目录中运行`bun run typecheck`、`bun test`、`bun run build`和`bun run build:firefox`。默认测试不枚举上游；live测试被显式忽略，避免每次CI触发全量抓取。网络目录请求有上限及有限重试，不重试429。
 
 代码使用[MIT License](LICENSE)。中文资料、卡图和依赖具有各自的权利与许可，详见[NOTICE](NOTICE.md)。本项目与17Lands、mtgch及Wizards of the Coast无隶属关系。
+
+## Docker与远程卡库
+
+提供多阶段`Dockerfile`及供Dokploy使用的`compose.yaml`，SQLite资料使用独立命名卷、单writer、每日检查。默认仍为本机模式；远程模式显式指定Host白名单并通过HTTPS反向代理访问。见[部署与备份说明](docs/deployment.md)及[公开仓库设置检查](docs/open-source-settings.md)。

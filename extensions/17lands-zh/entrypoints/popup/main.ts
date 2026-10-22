@@ -24,9 +24,9 @@ async function updateService(force = false) {
   try {
     const value = await browser.runtime.sendMessage({ type: force ? '17lands-zh:retry-service' : '17lands-zh:status' }) as ServiceStatus;
     if (!['online', 'empty', 'offline'].includes(value.state)) throw new Error('Invalid status');
-    const state = value.state === 'online' ? '本地服务已连接' : value.state === 'empty' ? '本地服务正在准备数据' : '本地服务离线';
-    const origin = { api: '本地 API', cache: '持久缓存', stale: '离线／旧缓存', direct: '直接图源回退', unavailable: '暂无结果' };
-    service.textContent = `${state} · 缓存 ${value.metadataCount} 张卡／${value.imageCount} 张图。${value.lastResult ? `最近结果：${origin[value.lastResult]}。` : ''}${value.state === 'offline' ? '可继续读取已有缓存；请启动本地卡牌服务后重试。' : ''}`;
+    const state = value.state === 'online' ? '卡库服务已连接' : value.state === 'empty' ? '卡库服务正在准备数据' : '卡库服务离线';
+    const origin = { api: '卡库 API', cache: '持久缓存', stale: '离线／旧缓存', direct: '直接图源回退', unavailable: '暂无结果' };
+    service.textContent = `${state} · 缓存 ${value.metadataCount} 张卡／${value.imageCount} 张图。${value.lastResult ? `最近结果：${origin[value.lastResult]}。` : ''}${value.state === 'offline' ? '可继续读取已有缓存；请确认卡库服务可用后重试。' : ''}`;
   } catch { service.textContent = '无法读取后台状态，请重新加载扩展。'; }
 }
 

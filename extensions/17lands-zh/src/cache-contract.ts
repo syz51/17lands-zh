@@ -1,4 +1,5 @@
-export const API_ORIGIN = 'http://127.0.0.1:17317';
+import { resolveApiOrigin } from './api-origin';
+export const API_ORIGIN = resolveApiOrigin(import.meta.env?.WXT_API_ORIGIN);
 export const UUID_RE = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 export const MAX_METADATA = 2000;

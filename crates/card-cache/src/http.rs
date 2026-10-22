@@ -150,15 +150,35 @@ impl IntoResponse for ApiError {
 }
 
 pub fn router(pool: ReadPool) -> Router {
-    Router::new().fallback(dispatch).with_state(pool)
+    router_with_hosts(pool, &[]).expect("default Host policy is valid")
 }
-async fn dispatch(State(pool): State<ReadPool>, request: Request) -> Response {
-    match handle(pool, request).await {
+#[derive(Clone)]
+struct HttpState {
+    pool: ReadPool,
+    allowed_hosts: Arc<Vec<String>>,
+}
+pub fn router_with_hosts(pool: ReadPool, hosts: &[String]) -> Result<Router> {
+    let mut allowed_hosts = vec![LISTEN_ADDRESS.to_string()];
+    for host in hosts {
+        let authority: axum::http::uri::Authority = host.parse().context("invalid allowed Host")?;
+        ensure!(
+            !host.contains(['@', '*', '%']) && !authority.host().is_empty(),
+            "invalid allowed Host"
+        );
+        allowed_hosts.push(host.to_ascii_lowercase());
+    }
+    Ok(Router::new().fallback(dispatch).with_state(HttpState {
+        pool,
+        allowed_hosts: Arc::new(allowed_hosts),
+    }))
+}
+async fn dispatch(State(state): State<HttpState>, request: Request) -> Response {
+    match handle(state, request).await {
         Ok(response) => response,
         Err(error) => error.into_response(),
     }
 }
-async fn handle(pool: ReadPool, request: Request) -> std::result::Result<Response, ApiError> {
+async fn handle(state: HttpState, request: Request) -> std::result::Result<Response, ApiError> {
     if request.uri().to_string().len() > MAX_URI_BYTES {
         return Err(ApiError {
             status: StatusCode::URI_TOO_LONG,
@@ -173,12 +193,15 @@ async fn handle(pool: ReadPool, request: Request) -> std::result::Result<Respons
             message: "only GET and HEAD are supported",
         });
     }
-    if request
-        .headers()
-        .get(header::HOST)
-        .is_some_and(|host| host.as_bytes() != LISTEN_ADDRESS.as_bytes())
-    {
-        return Err(ApiError::bad("Host must be 127.0.0.1:17317"));
+    if request.headers().get(header::HOST).is_some_and(|host| {
+        host.to_str().ok().is_none_or(|host| {
+            !state
+                .allowed_hosts
+                .iter()
+                .any(|allowed| allowed.eq_ignore_ascii_case(host))
+        })
+    }) {
+        return Err(ApiError::bad("Host is not in the configured allowlist"));
     }
     if request.headers().contains_key(header::TRANSFER_ENCODING)
         || request
@@ -198,7 +221,7 @@ async fn handle(pool: ReadPool, request: Request) -> std::result::Result<Respons
         bytes,
         etag,
         status,
-    } = pool.read(query).await?;
+    } = state.pool.read(query).await?;
     let matched = status == StatusCode::OK && matches_etag(request.headers(), &etag);
     let length = bytes.len();
     let head = request.method() == axum::http::Method::HEAD;
@@ -319,17 +342,13 @@ fn parse_query(path: &str, query: Option<&str>) -> std::result::Result<Query, Ap
     })
 }
 
-/// Bounded HTTP/1 transport. Public CLI always supplies the fixed loopback listener.
+/// Bounded HTTP/1 transport. CLI defaults to loopback; container exposure is explicit.
 /// An injected listener/shutdown makes real socket integration testing possible.
 pub async fn serve(
     listener: TcpListener,
     app: Router,
     shutdown: impl Future<Output = ()>,
 ) -> Result<()> {
-    ensure!(
-        listener.local_addr()?.ip().is_loopback(),
-        "loopback listener required"
-    );
     let connections = Arc::new(Semaphore::new(MAX_CONNECTIONS));
     let mut tasks = JoinSet::new();
     tokio::pin!(shutdown);

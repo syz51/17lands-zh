@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use mtga_card_cache::{
     db::{Reader, Writer},
@@ -10,6 +10,7 @@ use mtga_card_cache::{
 use std::{
     fs::File,
     io::{BufRead, BufReader},
+    net::SocketAddr,
     path::PathBuf,
 };
 
@@ -27,7 +28,12 @@ struct Args {
 }
 #[derive(Subcommand)]
 enum Command {
-    Serve,
+    Serve {
+        #[arg(long, env = "CARD_CACHE_LISTEN", default_value = http::LISTEN_ADDRESS)]
+        listen: SocketAddr,
+        #[arg(long, env = "CARD_CACHE_ALLOWED_HOSTS", value_delimiter = ',')]
+        allowed_hosts: Vec<String>,
+    },
     Status,
     /// Check the complete upstream dataset now if due; --force overrides daily scheduling.
     Refresh {
@@ -109,19 +115,27 @@ fn main() -> Result<()> {
                 )?)?
             );
         }
-        Command::Serve => {
+        Command::Serve {
+            listen,
+            allowed_hosts,
+        } => {
+            ensure!(
+                listen.ip().is_loopback() || !allowed_hosts.is_empty(),
+                "non-loopback listening requires explicit --allowed-hosts"
+            );
             let writer = Writer::open(&database)?;
             let pool = ReadPool::open(&database, http::READERS)?;
+            let app = http::router_with_hosts(pool, &allowed_hosts)?;
             let runtime = tokio::runtime::Builder::new_multi_thread()
                 .worker_threads(2)
                 .max_blocking_threads(http::READERS)
                 .enable_all()
                 .build()?;
             runtime.block_on(async {
-                let listener = tokio::net::TcpListener::bind(http::LISTEN_ADDRESS).await?;
+                let listener = tokio::net::TcpListener::bind(listen).await?;
                 let _refresh_worker = runtime::start_worker(writer, database)?;
-                eprintln!("card-cache listening on http://{}", http::LISTEN_ADDRESS);
-                http::serve(listener, http::router(pool), async {
+                eprintln!("card-cache listening on http://{listen}");
+                http::serve(listener, app, async {
                     let _ = tokio::signal::ctrl_c().await;
                 })
                 .await
