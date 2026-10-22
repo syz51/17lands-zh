@@ -2,9 +2,18 @@
 
 在17Lands Mock Draft、回放和已选牌区域阅读中文卡图。WXT浏览器扩展通过本机或远程Rust服务读取中文资料，SQLite和浏览器持久缓存减少重复下载；保留原站英文卡牌身份与选牌操作。
 
-![17Lands Mock Draft 显示中文卡图](docs/images/mock-draft-zh.jpg)
+![17Lands Mock Draft 显示中文卡图](docs/images/mock-draft-zh.png)
 
-Mock Draft中文卡图示例；实际覆盖取决于可用中文资料，来源与权利说明见下文。
+Mock Draft实拍（2× DPI，2560×1600），点击图片可查看原尺寸。实际覆盖取决于可用中文资料，来源与权利说明见下文。
+
+<details>
+<summary>查看单卡细节</summary>
+
+<a href="docs/images/return-to-the-light-realms-zh.webp"><img src="docs/images/return-to-the-light-realms-zh.webp" alt="Return to the Light Realms（明境复还）中文卡图原图细节" width="336"></a>
+
+Return to the Light Realms（明境复还），[mtgch原图](https://images.mtgch.com/zhs/large/front/9/e/9e72f397-2384-40f1-882b-f627664d97df.webp?ts=1788959471)，来源标记为TrentTouch。保留672×941原始文件与水印；页面放大后的清晰度受上游素材限制。
+
+</details>
 
 ## 快速开始
 
