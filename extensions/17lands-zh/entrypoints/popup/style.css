@@ -13,6 +13,10 @@ button { width: 100%; padding: 10px 12px; border: 1px solid #afbba4; border-radi
 button:hover:not(:disabled) { background: #e8eddf; }
 button:disabled { opacity: .5; cursor: default; }
 :focus-visible { outline: 2px solid #557b40; outline-offset: 4px; }
+details { border-top: 1px solid #dce1d3; padding: 12px 0; font-size: 12px; }
+summary { cursor: pointer; }
+details p { margin: 10px 0; }
+details .hint { margin-bottom: 0; }
 #status { min-height: 40px; margin: 12px 0; font-size: 12px; }
 #service { font-size: 12px; margin: 10px 0; }
 footer { padding-top: 14px; border-top: 1px solid #dce1d3; font-size: 12px; color: #656b5f; }
@@ -21,7 +25,7 @@ a { color: #436039; text-underline-offset: 3px; }
   :root { color: #ecefe6; background: #23271f; }
   p, footer { color: #b3bcaa; }
   .mark, a { color: #b5d49f; }
-  .setting, footer { border-color: #414a38; }
+  .setting, details, footer { border-color: #414a38; }
   button { border-color: #68795b; }
   button:hover:not(:disabled) { background: #35402d; }
   :focus-visible { outline-color: #b5d49f; }

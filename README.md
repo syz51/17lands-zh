@@ -38,7 +38,7 @@ WXT_API_ORIGIN=https://cards.example.com bun run build
 
 ### 加载扩展
 
-在`chrome://extensions`开启开发者模式，选择“加载已解压的扩展程序”，加载`extensions/17lands-zh/.output/chrome-mv3/`。随后刷新17Lands页面；工具栏弹窗应显示“卡库服务已连接”。中文默认开启，可随时切回英文或重试。无需17Lands token、Arena日志或账号配置。
+在`chrome://extensions`开启开发者模式，选择“加载已解压的扩展程序”，加载`extensions/17lands-zh/.output/chrome-mv3/`。随后刷新17Lands页面；工具栏弹窗应显示“卡库连接正常”。中文默认开启，可随时切回英文，或点击“重试当前页面”。缺图而有译文时，页面右下角提供“查看中文牌文”；缓存数量与最近数据来源在折叠的“诊断信息”中，表示浏览器累计记录，不是当前页面汉化进度。无需17Lands token、Arena日志或账号配置。
 
 ## 本机后台服务
 
