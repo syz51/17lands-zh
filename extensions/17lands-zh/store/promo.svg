@@ -1,12 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
-  <rect width="440" height="280" fill="#35573f"/>
-  <rect x="37" y="61" width="101" height="148" rx="13" fill="#90a88a"/>
-  <rect x="50" y="47" width="101" height="148" rx="13" fill="#f7f8f3"/>
-  <path d="M73 76h55M73 86h38M73 147h55M73 158h45M73 169h50" stroke="#90a88a" stroke-width="5" stroke-linecap="round"/>
-  <path d="M94 98l-12 32m12-32 12 32m-20-10h16" fill="none" stroke="#35573f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
-  <path d="M180 140h67m-18-17 18 17-18 17" fill="none" stroke="#f7f8f3" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="280" y="61" width="101" height="148" rx="13" fill="#90a88a"/>
-  <rect x="293" y="47" width="101" height="148" rx="13" fill="#f7f8f3"/>
-  <path d="M316 76h55M316 86h38M316 147h55M316 158h45M316 169h50" stroke="#90a88a" stroke-width="5" stroke-linecap="round"/>
-  <path d="M328 106h32v21h-32zM344 97v40" fill="none" stroke="#35573f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+  <rect width="440" height="280" fill="#263336"/>
+  <text x="30" y="116" fill="#efdfbe" font-family="Arial, sans-serif" font-size="36" font-weight="700">17Lands</text>
+  <text x="32" y="150" fill="#bcc5c1" font-family="Arial, sans-serif" font-size="19">Chinese card images</text>
+  <path d="M32 174h48" stroke="#d99a53" stroke-width="4" stroke-linecap="round"/>
+  <g transform="translate(270 65) scale(1.12)">
+  <rect x="24" width="104" height="116" rx="14" fill="#d99a53"/>
+  <rect y="8" width="112" height="120" rx="14" fill="#efdfbe"/>
+  <rect x="7" y="15" width="98" height="106" rx="8" fill="#263336"/>
+  <circle cx="56" cy="33" r="11" fill="#fff1c8"/>
+  <circle cx="81" cy="52" r="11" fill="#59b7e5"/>
+  <circle cx="72" cy="81" r="11" fill="#9696a6"/>
+  <circle cx="40" cy="81" r="11" fill="#ee795f"/>
+  <circle cx="31" cy="52" r="11" fill="#76b783"/>
+  <path d="M27 107h57m-10-9 10 9-10 9" fill="none" stroke="#efdfbe" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>

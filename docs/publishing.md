@@ -25,7 +25,7 @@ bun run zip:store
 - 主页：`https://github.com/syz51/17lands-zh`。
 - 支持：`https://github.com/syz51/17lands-zh/issues`。
 - 隐私政策：`https://github.com/syz51/17lands-zh/blob/main/docs/privacy.md`。
-- 图标：ZIP中的`icon/128.png`，源文件为`assets/icon.svg`。宣传图440×280；至少一张640×400或1280×800的真实使用截图，不含账号、私人轮抽链接或浏览器个人资料。
+- 图标：ZIP中的`icon/128.png`，源文件为`assets/icon.svg`；16px使用单独对齐像素的`assets/icon-16.svg`。图形撑满画布，不含文字。宣传图440×280；至少一张640×400或1280×800的真实使用截图，不含账号、私人轮抽链接或浏览器个人资料。
 
 ## 隐私与权限申报
 
