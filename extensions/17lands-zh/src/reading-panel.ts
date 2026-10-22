@@ -54,6 +54,8 @@ export class ReadingPanel {
       return option;
     });
     this.select!.replaceChildren(...options);
+    const activeIndex = this.active ? [...this.entries.keys()].indexOf(this.active) : -1;
+    if (activeIndex >= 0) this.select!.selectedIndex = activeIndex;
   }
   private show(element: Element) {
     if (this.hideTimer) clearTimeout(this.hideTimer);

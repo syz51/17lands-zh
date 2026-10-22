@@ -181,6 +181,29 @@ describe('live card image replacement', () => {
     image.remove(); await tick(); expect(image.src).toBe(b);
   });
 
+  test('keeps the reading selection aligned with its text as fallback cards appear and disappear', async () => {
+    const { document, replacer } = setup(async () => false, async (url) => ({
+      face: { ...card().faces[0]!, name_zh: url === a ? '平原' : '沼泽', oracle_text_zh: url === a ? '白色法术力' : '黑色法术力' },
+    }));
+    document.body.innerHTML = `<img src="${a}"><img src="${b}">`;
+    replacer.setEnabled(true); await tick();
+    const root = document.querySelector('[data-lands-zh-reader]')!.shadowRoot!;
+    root.querySelector<HTMLButtonElement>('button[aria-controls]')!.click();
+    const select = root.querySelector('select')!;
+    select.selectedIndex = 1;
+    select.dispatchEvent(new document.defaultView!.Event('change'));
+    const panel = root.querySelector('section')!;
+    expect(panel.textContent).toContain('黑色法术力');
+    const hover = document.createElement('img'); hover.src = a; document.body.append(hover);
+    await tick();
+    expect(select.selectedOptions[0]!.textContent).toBe('沼泽');
+    expect(panel.textContent).toContain('黑色法术力');
+    document.body.querySelector('img')!.remove(); await tick();
+    expect(select.selectedOptions[0]!.textContent).toBe('沼泽');
+    expect(panel.hidden).toBe(false);
+    expect(panel.textContent).toContain('黑色法术力');
+  });
+
   test('text remains openable after repeated refresh and disable/enable, and final disposal removes the host', async () => {
     let text = '第一次中文规则';
     const { document, replacer } = setup(async () => false, async () => ({ face: { ...card().faces[0]!, image_url: null, image_kind: 'unavailable', oracle_text_zh: text } }));
