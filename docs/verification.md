@@ -11,3 +11,11 @@ Chrome真实扩展0.2.0验证了本地API、FRA卡包及已选池、基本地同
 独立项目迁移后的检查由本仓库CI运行；live上游枚举不在常规CI中。尚未独立验收Firefox运行、整个Chrome进程重启、全系列/全部背面覆盖及安装故障注入回滚。构建通过不等于这些运行检查已完成。
 
 同日独立迁移验收：新workspace的32项常规Rust测试、fmt、Clippy、Rust 1.88编译检查，以及扩展36项测试/typecheck/双浏览器构建通过。独立公开前审查未发现阻断项；新CLI的macOS LaunchAgent已实际安装，迁移快照保持WAL、revision及118773记录，未到期refresh返回not_due。Chrome从独立目录加载的新扩展已连接新服务，当前卡包和已选池中文可见，弹窗确认14张卡及14张图的持久缓存。
+
+## Docker、远程API与Chrome 0.3.0（2026-10-22）
+
+Dokploy从GitHub main拉取源码构建，Compose单容器部署，通过既有Cloudflare Tunnel及Traefik提供`https://17lands.syzroy.com`。GitHub Check在`b947318`通过全部Rust（Ubuntu/macOS）、扩展及容器构建检查；常规Rust测试34项，扩展37项。镜像构建使用rsproxy下载锁定依赖，APT使用中科大；两个APT阶段耗时4.8s及9.0s，镜像构建成功。
+
+将SQLite Backup API生成的一致快照导入命名卷并核对SHA256；真实容器重建前后ID改变，记录数118773、revision 1、WAL及原刷新时间保持。容器healthy，UID/GID10001、只读根目录、512MiB内存上限、cap_drop=ALL，未发布宿主API端口。公网health/status返回200、ready=true，16次并发卡牌请求全部200；ETag条件读取304，POST返回405。真实查询确认Return to the Light Realms精确中文图，以及Plains保持请求ID并返回同Oracle中文替代图。
+
+Chrome通过原生UI重载远程构建0.3.0，确认权限包含远程HTTPS origin；手机热点的旧DNS空记录经用户重连后恢复。扩展弹窗确认服务已连接、14张远程元数据缓存及27张图片缓存；目视确认真实Mock Draft的卡包、基本地与已选池中文显示。未做新的选牌。随后停止本机LaunchAgent并保留原数据库，统一由远端服务负责刷新。Firefox运行、异地备份恢复与下一次每日刷新仍未进行实测。
