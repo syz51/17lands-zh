@@ -7,7 +7,7 @@ export default defineConfig({
   manifestVersion: 3,
   manifest: ({ browser }) => ({
     name: '17Lands 中文卡图',
-    description: '通过本地卡牌服务和离线缓存显示 17Lands 中文卡图与文字。',
+    description: '在 17Lands 显示中文卡图；缺图时可阅读已有中文牌文，支持本机或远程卡库与离线缓存。',
     permissions: ['storage'],
     host_permissions: [`${apiOrigin}/*`, 'https://images.mtgch.com/*', 'https://cards.scryfall.io/*'],
     action: { default_title: '17Lands 中文卡图' },

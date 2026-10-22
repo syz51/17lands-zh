@@ -47,7 +47,7 @@ export class ReadingPanel {
   private update() {
     if (!this.host) return;
     this.host.hidden = this.entries.size === 0;
-    this.launcher!.textContent = `中文阅读 (${this.entries.size})`;
+    this.launcher!.textContent = '查看中文牌文';
     const options = [...this.entries.values()].map((entry, index) => {
       const option = this.document.createElement('option'); option.value = String(index);
       option.textContent = `${entry.face.name_zh || entry.label}${entry.face.face === 'back' ? ' · 背面' : ''}`;
@@ -65,7 +65,7 @@ export class ReadingPanel {
     const name = this.document.createElement('strong'); name.textContent = entry.face.name_zh || entry.label;
     const type = this.document.createElement('p'); type.textContent = entry.face.type_line_zh;
     const rules = this.document.createElement('p'); rules.textContent = entry.face.oracle_text_zh;
-    const source = this.document.createElement('small'); source.textContent = `中文文字 · ${entry.face.source} · 英文卡图保留`;
+    const source = this.document.createElement('small'); source.textContent = `译文来源：${entry.face.source}；卡图保留英文。`;
     this.text!.replaceChildren(name, type, rules, source);
   }
   private deferHide() {
@@ -82,8 +82,8 @@ export class ReadingPanel {
     const style = this.document.createElement('style');
     style.textContent = `:host{all:initial;position:fixed;right:12px;bottom:12px;z-index:2147483646;font:14px/1.6 system-ui,sans-serif;color:#252721} :host([hidden]),[hidden]{display:none!important} button,select{font:inherit;color:inherit;background:#f7f8f3;border:1px solid #afbba4;border-radius:5px;padding:6px 10px} button{cursor:pointer} button:focus-visible,select:focus-visible{outline:2px solid #557b40;outline-offset:2px} section{width:min(320px,calc(100vw - 24px));max-height:55vh;overflow:auto;background:#f7f8f3;border:1px solid #afbba4;border-radius:5px;padding:14px;margin-bottom:8px;box-shadow:0 4px 18px #0003} header{display:flex;align-items:center;justify-content:space-between;gap:8px} select{width:100%;margin:10px 0} p{white-space:pre-wrap;margin:8px 0} small{color:#656b5f} @media(prefers-color-scheme:dark){:host{color:#ecefe6} section,button,select{background:#23271f;border-color:#68795b} small{color:#b3bcaa}}`;
     this.panel = this.document.createElement('section'); this.panel.hidden = true;
-    this.panel.id = 'zh-reading'; this.panel.setAttribute('role', 'region'); this.panel.setAttribute('aria-label', '中文卡牌文字');
-    const header = this.document.createElement('header'); const title = this.document.createElement('strong'); title.textContent = '中文卡牌文字';
+    this.panel.id = 'zh-reading'; this.panel.setAttribute('role', 'region'); this.panel.setAttribute('aria-label', '中文牌文');
+    const header = this.document.createElement('header'); const title = this.document.createElement('strong'); title.textContent = '中文牌文';
     const close = this.document.createElement('button'); close.type = 'button'; close.textContent = '关闭';
     const hide = () => { this.pinned = false; this.panel!.hidden = true; this.launcher!.setAttribute('aria-expanded', 'false'); };
     close.addEventListener('click', () => { hide(); this.launcher!.focus(); });

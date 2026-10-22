@@ -9,13 +9,20 @@
   <body>
     <main>
       <header><span class="mark" aria-hidden="true">中</span><h1>17Lands 中文卡图</h1></header>
-      <p>在卡包、已选牌与悬浮预览中阅读中文卡图。</p>
-      <label class="setting"><span>显示中文卡图</span><input id="enabled" type="checkbox" role="switch" disabled /></label>
-      <p class="hint">缺图时保留英文图；有中文文字时可打开“中文阅读”。</p>
-      <p id="service" role="status" aria-live="polite">正在连接本地卡牌服务…</p>
-      <button id="retry" type="button" disabled>重试加载中文图</button>
+      <p>在 17Lands 卡包、已选牌与悬浮预览中显示中文。</p>
+      <label class="setting"><span>显示中文</span><input id="enabled" type="checkbox" role="switch" aria-describedby="fallback-hint" disabled /></label>
+      <p class="hint" id="fallback-hint">有中文卡图时自动替换；没有时保留英文原图。有译文时，可通过页面右下角的“查看中文牌文”阅读。</p>
+      <p id="service" role="status" aria-live="polite">正在检查卡库连接…</p>
+      <button id="retry" type="button" disabled>重试当前页面</button>
       <p id="status" role="status" aria-live="polite">正在读取设置…</p>
-      <footer>中文图源：<a href="https://www.mtgch.com/" target="_blank" rel="noreferrer">大学院废墟 ↗</a></footer>
+      <details>
+        <summary>诊断信息</summary>
+        <p id="cache">正在读取本机缓存…</p>
+        <p class="hint">累计保存的查询记录和图片，包含暂无资料的查询；不代表当前页面已汉化的卡牌数量。</p>
+        <p id="origin">最近数据来源：尚无记录。</p>
+        <p class="hint">该记录可能来自任意 17Lands 标签页，不代表图片已成功显示。</p>
+      </details>
+      <footer>中文资料与卡图：<a href="https://www.mtgch.com/" target="_blank" rel="noreferrer">大学院废墟 mtgch ↗</a></footer>
     </main>
   </body>
 </html>
