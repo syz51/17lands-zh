@@ -1,0 +1,39 @@
+name: 问题报告
+description: 报告卡图、扩展或卡库服务的可复现问题
+title: '[Bug] '
+body:
+  - type: markdown
+    attributes:
+      value: 安全漏洞请使用私密报告。不要上传token、Arena原始日志、数据库、私人选牌链接或服务器凭据。
+  - type: input
+    id: environment
+    attributes:
+      label: 环境
+      description: 操作系统、浏览器/扩展版本、服务commit或版本，以及本机/远程模式。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 提供最小步骤；卡牌问题可附公开印刷UUID及正反面，不附私人回放链接。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 脱敏证据
+      description: 可附裁剪截图或最小错误摘录；遮盖账号、私人URL及密钥。
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: 提交前检查
+      options:
+        - label: 已搜索现有Issue，并移除个人信息及凭据。
+          required: true

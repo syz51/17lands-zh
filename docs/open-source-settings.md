@@ -1,6 +1,15 @@
 # 公开仓库设置检查
 
-2026-10-22检查`syz51/17lands-zh`的GitHub API设置。该报告不自动改变分支合并或权限规则。
+2026-10-22已实施以下设置，并通过GitHub API回读确认。历史检查结果保留在下文。
+
+## 已实施
+
+- main启用分支保护，管理员同样受限；要求PR、分支与main同步、四项GitHub Actions检查通过并解决讨论。检查为`rust (ubuntu-latest)`、`rust (macos-latest)`、`extension`、`container`，绑定GitHub Actions App。禁止强推与删除。个人维护阶段要求0个额外批准，不配置绕过名单。
+- Dependabot alerts与security updates已开启；`.github/dependabot.yml`为Cargo、Bun、GitHub Actions及Docker配置每周一03:00（Asia/Tokyo）检查。每个生态最多2个版本更新PR，minor/patch适当分组，major独立评估；不自动合并或部署。
+- private vulnerability reporting已开启；[SECURITY.md](../SECURITY.md)提供私密报告入口及维护范围，[CONTRIBUTING.md](../CONTRIBUTING.md)列出PR流程、检查与数据边界。已加入问题报告/功能建议表单、私密安全报告链接及PR模板。
+- 已启用合并后自动删除分支。保留原有合并方式、Issues、Wiki与Projects，未扩展协作者权限。
+
+## 首次检查记录
 
 已有：public、MIT、Issues、CI；Actions工作流显式只读contents权限，action引用固定SHA；secret scanning和push protection已开启。CI checkout已更新为使用Node24的当前版本，并加入Docker构建验证。
 

@@ -1,0 +1,22 @@
+name: 功能建议
+description: 描述希望解决的使用问题
+title: '[Feature] '
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 使用场景与问题
+      description: 谁在什么操作中遇到什么困难？
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望行为与替代方案
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 适用范围
+      description: 相关浏览器、卡牌范围、联网需求或部署限制；不要附私人数据。
