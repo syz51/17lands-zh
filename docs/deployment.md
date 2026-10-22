@@ -22,8 +22,6 @@ Debian依赖可另外设置`DEBIAN_MIRROR=mirrors.ustc.edu.cn`，同时替换构
 
 推荐先试[rsproxy](https://rsproxy.cn/)（字节跳动Dev Infra维护，官方称每分钟同步），备用为[中科大](https://mirrors.ustc.edu.cn/help/crates.io-index.html)：`sparse+https://mirrors.ustc.edu.cn/crates.io-index/`。两者同时提供索引和crate包。[清华](https://mirrors.tuna.tsinghua.edu.cn/help/crates.io-index/)当前索引的`config.json`仍指向`static.crates.io`下载包，因此不能完全解决该站点出站慢的问题。
 
-2026-10-22在部署VPS上抽样：索引请求rsproxy 0.19s、中科大0.11s、清华0.39s；同一`libsqlite3-sys 0.38.2`归档（5,361,739 bytes）分别经rsproxy、中科大、官方站下载耗时0.51s、0.60s、21.17s，三份SHA256均与Cargo.lock一致。这是单轮观测，不是长期可用率保证；最终以锁定依赖的完整构建为验收。
-
 继续保留HTTPS、`cargo build --locked`和锁文件checksum，不因镜像网络问题关闭校验或更新依赖版本。Docker BuildKit保留registry下载缓存，后续源码变更无需重新下载全部依赖。镜像属于额外信任方，应使用明确维护者及官方文档；[Cargo source replacement](https://doc.rust-lang.org/cargo/reference/source-replacement.html)要求镜像提供与原源相同的内容。
 
 ## 备份与恢复

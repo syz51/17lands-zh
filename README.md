@@ -61,7 +61,7 @@ macOS可先停止前台serve，再执行：
 - 精确中文图缺失时，可用同Oracle/同卡面的其他中文印刷；插画可能变化，原始请求ID不变。没有中文图或文字时保留英文。
 - 服务只监听loopback，不开放网络写接口。扩展只在17Lands运行，不读取Arena日志、token或账号资料，不上传个人选牌历史。
 - 上游会收到服务的公开资料请求；图源会收到所加载图片的公开卡牌ID。图片按需下载，不附带全库图片。
-- Firefox MV3可构建，但实际运行尚未验收；Safari未提供包装。Chrome验证范围见[验证记录](docs/verification.md)。
+- Firefox MV3可构建，但实际运行尚未验收；Safari未提供包装。
 
 ## 开发
 
@@ -77,4 +77,4 @@ cargo test --workspace --locked
 
 ## Docker与远程卡库
 
-提供多阶段`Dockerfile`及供Dokploy使用的`compose.yaml`，SQLite资料使用独立命名卷、单writer、每日检查。默认仍为本机模式；远程模式显式指定Host白名单并通过HTTPS反向代理访问。见[部署与备份说明](docs/deployment.md)及[公开仓库设置检查](docs/open-source-settings.md)。
+提供多阶段`Dockerfile`及供Dokploy使用的`compose.yaml`，SQLite资料使用独立命名卷、单writer、每日检查。默认仍为本机模式；远程模式显式指定Host白名单并通过HTTPS反向代理访问。见[部署与备份说明](docs/deployment.md)。

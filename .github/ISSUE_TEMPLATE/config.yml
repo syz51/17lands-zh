@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 私密安全报告
+    url: https://github.com/syz51/17lands-zh/security/advisories/new
+    about: 请勿在公开Issue中披露安全漏洞或凭据。
