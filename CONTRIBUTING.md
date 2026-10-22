@@ -34,6 +34,6 @@ bun run build:firefox
 
 说明问题、修改后的行为、验证结果及尚未验证的范围。不要提交数据库、缓存、归档、原始Arena日志、凭据、个人浏览或选牌历史；不要把真实服务的webhook贴入Issue或日志。公开卡牌UUID可用于最小夹具。
 
-保留17Lands英文身份和原站选牌行为；缺图或同Oracle替代图应如实标记。代码按[MIT](LICENSE)贡献，第三方资料和卡图另见[NOTICE](NOTICE.md)；只提交你有权提供的内容，不复制GPL版17Lands客户端代码。
+保留17Lands英文身份和原站选牌行为；缺图或同Oracle替代图应如实标记。代码按[MIT](LICENSE)贡献，第三方资料和卡图另见[README的权利说明](README.md#许可与第三方权利)；只提交你有权提供的内容，不复制GPL版17Lands客户端代码。
 
 Dependabot每周检查Cargo、Bun、GitHub Actions及Docker依赖。更新PR仍须人工评估并通过CI，不自动合并或部署。
