@@ -1,6 +1,6 @@
 # 17Lands 中文卡图
 
-使用 WXT 构建的独立 MV3 扩展（0.2.0）。通过固定本地只读卡牌 API 获取中文卡图与文字，在扩展自己的 IndexedDB / CacheStorage 中保存离线缓存，保留 17Lands 的抽牌行为。
+使用 WXT 构建的独立 MV3 扩展（0.3.0）。通过只读卡牌 API 获取中文卡图与文字，在扩展自己的 IndexedDB / CacheStorage 中保存离线缓存，保留 17Lands 的抽牌行为。
 
 ## 安装
 
@@ -8,7 +8,7 @@
 
 默认开启中文；点击工具栏里的扩展按钮可切回英文，也可以重试当前页面的中文图。无需 Tampermonkey、17Lands token 或 Arena 日志。
 
-本地服务地址固定为 `http://127.0.0.1:17317`，无需输入配置。由仓库的 Rust 卡牌服务管理 SQLite 与每日更新；扩展只读取 `/v1/status`、`/v1/cards?ids=…&lang=zhs`。弹窗区分本地 API、持久缓存、离线旧缓存与直接图源回退。服务未启动时可读取已有缓存；点击“重试”重新检测服务并刷新当前页面。
+默认构建使用 `http://127.0.0.1:17317`；远程构建通过 `WXT_API_ORIGIN=https://17lands.syzroy.com bun run build` 选择 HTTPS 服务，并同步生成权限，详见[部署说明](../../docs/deployment.md)。由仓库的 Rust 卡牌服务管理 SQLite 与每日更新；扩展只读取 `/v1/status`、`/v1/cards?ids=…&lang=zhs`。弹窗区分卡库 API、持久缓存、离线旧缓存与直接图源回退。服务未启动时可读取已有缓存；点击“重试”重新检测服务并刷新当前页面。
 
 Firefox 包可通过 `bun run build:firefox` 构建；临时加载时在 `about:debugging` 中选择生成的 manifest。Firefox 实际运行需单独验证。Safari 需要额外的应用包装，本项目不提供可直接安装的 Safari 包。
 
@@ -26,7 +26,7 @@ bun run zip
 
 ## 行为与范围
 
-- 只在 `https://www.17lands.com/*` 与 `https://17lands.com/*` 运行。`storage` 权限保存开关；网络权限仅包含固定本地服务、`images.mtgch.com` 与 `cards.scryfall.io`。
+- 只在 `https://www.17lands.com/*` 与 `https://17lands.com/*` 运行。`storage` 权限保存开关；网络权限仅包含构建时选定的 API origin、`images.mtgch.com` 与 `cards.scryfall.io`。
 - 精确使用图片里的 Scryfall 印刷 UUID 和正反面路径，不按卡名猜测，也不改选牌点击、卡名、导出或网站接口。
 - 支持动态新增与复用的图片、srcset / picture 以及内联背景图；中英切换无需刷新。
 - 内容脚本只向后台传打印 UUID 和 `front` / `back`，不传 URL。真正的 MV3 后台验证消息来源、API schema 与图片来源，拒绝任意地址代理、重定向和 SVG 响应。
@@ -40,4 +40,4 @@ bun run zip
 
 ## 验证边界
 
-36项自动测试覆盖映射、换图竞态、动态节点、关闭恢复、阅读面板反复刷新、消息校验、批处理、持久缓存、ETag/revision、原生fetch接收者、解码先于缓存及坏图恢复。`tests/preview-server.ts`是明确的视觉夹具；原生存储/Worker QA不替代真实扩展验收。2026-10-22已在Chrome重载0.2.0，验证真实本地API、Plains中文替代图、中英切换、下一抽与已选池，以及停服务并重载扩展后离线读取；恢复服务后重新连接。Firefox仅构建，未运行验收。详见[验证记录](../../docs/verification.md)。
+37项自动测试覆盖映射、换图竞态、动态节点、关闭恢复、阅读面板反复刷新、消息校验、批处理、持久缓存、ETag/revision、原生fetch接收者、解码先于缓存、坏图恢复及 API origin 验证。`tests/preview-server.ts`是明确的视觉夹具；原生存储/Worker QA不替代真实扩展验收。2026-10-22已在Chrome重载0.2.0，验证真实本地API、Plains中文替代图、中英切换、下一抽与已选池，以及停服务并重载扩展后离线读取；恢复服务后重新连接。Firefox仅构建，未运行验收。详见[验证记录](../../docs/verification.md)。

@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
       args:
         CARGO_MIRROR: ${CARGO_MIRROR:-}
+        DEBIAN_MIRROR: ${DEBIAN_MIRROR:-deb.debian.org}
     restart: unless-stopped
     environment:
       CARD_CACHE_LISTEN: 0.0.0.0:17317

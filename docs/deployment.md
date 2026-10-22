@@ -18,6 +18,8 @@
 
 Docker构建默认使用crates.io。在Dokploy Environment设置`CARGO_MIRROR=sparse+https://rsproxy.cn/index/`，Compose会将其作为build argument传入；它只影响构建阶段，不修改宿主Cargo配置或运行时资料源。清空该变量即可恢复官方源。直接构建也可使用`docker build --build-arg CARGO_MIRROR=sparse+https://rsproxy.cn/index/ -t 17lands-zh .`。
 
+Debian依赖可另外设置`DEBIAN_MIRROR=mirrors.ustc.edu.cn`，同时替换构建及运行镜像中的APT源主机，保留`/debian`、`/debian-security`路径、suite和Debian签名密钥验证。其默认值为`deb.debian.org`；变量只在镜像构建生效，不改变VPS操作系统的软件源。配置依据[中科大Debian镜像说明](https://mirrors.ustc.edu.cn/help/debian.html)。
+
 推荐先试[rsproxy](https://rsproxy.cn/)（字节跳动Dev Infra维护，官方称每分钟同步），备用为[中科大](https://mirrors.ustc.edu.cn/help/crates.io-index.html)：`sparse+https://mirrors.ustc.edu.cn/crates.io-index/`。两者同时提供索引和crate包。[清华](https://mirrors.tuna.tsinghua.edu.cn/help/crates.io-index/)当前索引的`config.json`仍指向`static.crates.io`下载包，因此不能完全解决该站点出站慢的问题。
 
 2026-10-22在部署VPS上抽样：索引请求rsproxy 0.19s、中科大0.11s、清华0.39s；同一`libsqlite3-sys 0.38.2`归档（5,361,739 bytes）分别经rsproxy、中科大、官方站下载耗时0.51s、0.60s、21.17s，三份SHA256均与Cargo.lock一致。这是单轮观测，不是长期可用率保证；最终以锁定依赖的完整构建为验收。

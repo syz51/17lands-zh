@@ -1,5 +1,7 @@
 FROM rust:1.99.1-slim-bookworm AS build
-RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev make \
+ARG DEBIAN_MIRROR=deb.debian.org
+RUN sed -i "s|deb.debian.org|${DEBIAN_MIRROR}|g" /etc/apt/sources.list.d/debian.sources \
+    && apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev make \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
@@ -13,7 +15,9 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     && strip target/release/mtga-card-cache
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl libgcc-s1 \
+ARG DEBIAN_MIRROR=deb.debian.org
+RUN sed -i "s|deb.debian.org|${DEBIAN_MIRROR}|g" /etc/apt/sources.list.d/debian.sources \
+    && apt-get update && apt-get install -y --no-install-recommends ca-certificates curl libgcc-s1 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 cardcache \
     && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin cardcache \
