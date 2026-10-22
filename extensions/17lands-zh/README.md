@@ -1,0 +1,43 @@
+# 17Lands 中文卡图
+
+使用 WXT 构建的独立 MV3 扩展（0.2.0）。通过固定本地只读卡牌 API 获取中文卡图与文字，在扩展自己的 IndexedDB / CacheStorage 中保存离线缓存，保留 17Lands 的抽牌行为。
+
+## 安装
+
+使用构建产物 `.output/chrome-mv3/`：在 Chrome / Edge 的扩展管理页开启开发者模式，选择“加载已解压的扩展程序”，选中该目录。安装后刷新已经打开的 17Lands 页面。
+
+默认开启中文；点击工具栏里的扩展按钮可切回英文，也可以重试当前页面的中文图。无需 Tampermonkey、17Lands token 或 Arena 日志。
+
+本地服务地址固定为 `http://127.0.0.1:17317`，无需输入配置。由仓库的 Rust 卡牌服务管理 SQLite 与每日更新；扩展只读取 `/v1/status`、`/v1/cards?ids=…&lang=zhs`。弹窗区分本地 API、持久缓存、离线旧缓存与直接图源回退。服务未启动时可读取已有缓存；点击“重试”重新检测服务并刷新当前页面。
+
+Firefox 包可通过 `bun run build:firefox` 构建；临时加载时在 `about:debugging` 中选择生成的 manifest。Firefox 实际运行需单独验证。Safari 需要额外的应用包装，本项目不提供可直接安装的 Safari 包。
+
+## 开发与检查
+
+```sh
+bun install --frozen-lockfile
+bun run typecheck
+bun test
+bun run build
+bun run zip
+```
+
+`bun run dev` 使用 WXT 的开发流程。`bun.lock` 固定依赖；没有前端框架或运行时服务器依赖。
+
+## 行为与范围
+
+- 只在 `https://www.17lands.com/*` 与 `https://17lands.com/*` 运行。`storage` 权限保存开关；网络权限仅包含固定本地服务、`images.mtgch.com` 与 `cards.scryfall.io`。
+- 精确使用图片里的 Scryfall 印刷 UUID 和正反面路径，不按卡名猜测，也不改选牌点击、卡名、导出或网站接口。
+- 支持动态新增与复用的图片、srcset / picture 以及内联背景图；中英切换无需刷新。
+- 内容脚本只向后台传打印 UUID 和 `front` / `back`，不传 URL。真正的 MV3 后台验证消息来源、API schema 与图片来源，拒绝任意地址代理、重定向和 SVG 响应。
+- 跨页面合并查询，每批最多 100 个 ID，最多并发 2 批；图片最多并发 4 个。服务状态每 5 分钟检测，离线退避 1 分钟，手动重试至少间隔 5 秒。可见页面每 5 分钟更新当前牌图，忽略失效的异步响应。
+- 元数据在 IndexedDB 中保存，最多 2,000 条，按最近使用淘汰。正结果 TTL 24 小时，负结果 5 分钟；revision 改变即重新查询，支持 ETag / 304；离线可使用旧结果。CacheStorage 图片最多 160 张、总计 64 MiB，按写入顺序淘汰，单图上限 2 MiB；后台用 `createImageBitmap` 原生解码成功并释放 bitmap 后才写缓存和传输数据 URL，页面再确认可显示才换图。旧缓存也重新解码；坏条目删除后重取，好图继续离线可用。
+- 保留卡面方向（front/back）；中文图源没有某卡或某面时回退英文，不能将这类回退宣称为完整汉化。
+- 图像使用服务提供的精确中文印刷版或同 Oracle 替代版，保留牌面身份；基本地也由 API 处理，不按英文卡名猜印刷版本。只有服务离线或数据未准备好且没有已缓存卡牌时，才尝试旧的大学院废墟直接映射，并明确标记为直接图源回退。
+- 有中文文字但缺图或加载失败时，保留英文原图与 alt，提供独立“中文阅读”面板。支持鼠标悬停、键盘聚焦、点击按钮及下拉选择，Escape 关闭；不拦截卡牌选取。所有中文字段通过 `textContent` 写入。
+- 图片仅缓存在用户浏览器，不随扩展包打包；卡牌版权归相应权利人。主要中文图源为[大学院废墟](https://www.mtgch.com/)，服务可提供 Scryfall 中文替代版本。本扩展与 17Lands、大学院废墟或 Wizards 无隶属关系。
+- 加载中文图片会把该卡图的公开印刷 ID 发送给图源，不发送页面 URL、账号或日志。Firefox 包按此声明网站内容传输，并要求 Firefox 140+；没有遥测或统计上传。
+
+## 验证边界
+
+36项自动测试覆盖映射、换图竞态、动态节点、关闭恢复、阅读面板反复刷新、消息校验、批处理、持久缓存、ETag/revision、原生fetch接收者、解码先于缓存及坏图恢复。`tests/preview-server.ts`是明确的视觉夹具；原生存储/Worker QA不替代真实扩展验收。2026-10-22已在Chrome重载0.2.0，验证真实本地API、Plains中文替代图、中英切换、下一抽与已选池，以及停服务并重载扩展后离线读取；恢复服务后重新连接。Firefox仅构建，未运行验收。详见[验证记录](../../docs/verification.md)。

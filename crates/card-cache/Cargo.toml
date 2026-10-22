@@ -1,0 +1,33 @@
+[package]
+name = "mtga-card-cache"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Local read-only Chinese card cache for 17Lands"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rusqlite.workspace = true
+fs2.workspace = true
+jiff.workspace = true
+sha2.workspace = true
+url.workspace = true
+ureq.workspace = true
+flate2.workspace = true
+tar = { version = "0.4", default-features = false }
+tempfile.workspace = true
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "net", "signal", "time", "sync", "macros"] }
+hyper = { version = "1", default-features = false, features = ["server", "http1"] }
+hyper-util = { version = "0.1", default-features = false, features = ["tokio", "service"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+libc.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+tower = { version = "0.5", default-features = false, features = ["util"] }
