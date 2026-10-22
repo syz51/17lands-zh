@@ -83,7 +83,7 @@ macOS可先停止前台serve，再执行：
 
 ## 参与开发
 
-开发环境、检查命令、PR流程及CI漏洞扫描见[贡献说明](CONTRIBUTING.md)，仓库开发约定见[AGENTS.md](AGENTS.md)。安全问题请按[SECURITY.md](SECURITY.md)私密报告。
+开发环境、检查命令、PR流程及CI漏洞扫描见[贡献说明](CONTRIBUTING.md)，仓库开发约定见[AGENTS.md](AGENTS.md)。商店构建与资料见[发布说明](docs/publishing.md)，数据处理见[隐私政策](docs/privacy.md)。安全问题请按[SECURITY.md](SECURITY.md)私密报告。
 
 ## 许可与第三方权利
 

@@ -38,6 +38,7 @@ jobs:
       - run: bun run build
       - run: bun run build:firefox
       - run: WXT_API_ORIGIN=https://17lands.syzroy.com bun run build
+      - run: bun run zip:store
   container:
     runs-on: ubuntu-latest
     timeout-minutes: 25

@@ -1,6 +1,6 @@
 {
   "name": "17lands-zh",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "license": "MIT",
   "repository": "github:syz51/17lands-zh",
@@ -8,8 +8,10 @@
   "scripts": {
     "dev": "wxt",
     "build": "wxt build",
+    "build:store": "WXT_API_ORIGIN=https://17lands.syzroy.com wxt build && bun scripts/check-store.ts",
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
+    "zip:store": "WXT_API_ORIGIN=https://17lands.syzroy.com wxt zip && bun scripts/check-store.ts",
     "zip:firefox": "wxt zip -b firefox",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
