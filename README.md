@@ -71,6 +71,8 @@ macOS可先停止前台serve，再执行：
 
 提供多阶段`Dockerfile`及供Dokploy使用的`compose.yaml`，SQLite资料使用独立命名卷、单writer、每日检查。远程部署须显式指定监听地址与Host白名单，并通过HTTPS反向代理访问。见[部署与备份说明](docs/deployment.md)。
 
+Docker系统包版本范围允许Debian修订及安全更新，升级发行版或软件包版本系列时须重新审查。
+
 ## 三层数据
 
 1. **来源层**：从[magic-cards-zhs](https://github.com/HeliumOctahelide/magic-cards-zhs)获取已发布简体归档并验证SHA256，结合[mtgch API v2](https://mtgch.com/api/v2/docs)明确提供的中文图片目录。所有关联使用印刷UUID、Oracle和卡面身份。

@@ -1,7 +1,9 @@
 FROM rust:1.99.1-slim-bookworm AS build
 ARG DEBIAN_MIRROR=deb.debian.org
+# Version ranges allow Debian revisions and security updates.
 RUN sed -i "s|deb.debian.org|${DEBIAN_MIRROR}|g" /etc/apt/sources.list.d/debian.sources \
-    && apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev make \
+    && apt-get update && apt-get install -y --no-install-recommends \
+      'gcc=4:12.2.*' 'libc6-dev=2.36-*' 'make=4.3-*' \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
@@ -17,7 +19,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
 FROM debian:bookworm-slim
 ARG DEBIAN_MIRROR=deb.debian.org
 RUN sed -i "s|deb.debian.org|${DEBIAN_MIRROR}|g" /etc/apt/sources.list.d/debian.sources \
-    && apt-get update && apt-get install -y --no-install-recommends ca-certificates curl libgcc-s1 \
+    && apt-get update && apt-get install -y --no-install-recommends \
+      'ca-certificates=20250419~deb12u*' 'curl=7.88.1-*' 'libgcc-s1=12.2.*' \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 cardcache \
     && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin cardcache \
