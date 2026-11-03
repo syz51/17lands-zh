@@ -18,9 +18,9 @@
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
-    "@types/bun": "1.4.3",
+    "@types/bun": "1.4.4",
     "happy-dom": "21.0.4",
     "typescript": "7.0.2",
-    "wxt": "0.21.4"
+    "wxt": "0.21.5"
   }
 }
