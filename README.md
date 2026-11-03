@@ -1,6 +1,6 @@
 # 17Lands 中文卡图
 
-在17Lands Mock Draft、回放和已选牌区域阅读中文卡图。WXT浏览器扩展通过本机或远程Rust服务读取中文资料，SQLite和浏览器持久缓存减少重复下载；保留原站英文卡牌身份与选牌操作。
+在17Lands Mock Draft、回放和已选牌区域阅读中文卡图，并在轮抽页当前卡包下查看17Lands公开聚合统计。WXT浏览器扩展通过本机或远程Rust服务读取中文资料，统计直接从17Lands读取；保留原站英文卡牌身份与选牌操作。
 
 ![17Lands Mock Draft 显示中文卡图](docs/images/mock-draft-zh.png)
 
@@ -51,7 +51,9 @@ WXT_API_ORIGIN=https://cards.example.com bun run build
 
 ### 加载扩展
 
-在`chrome://extensions`开启开发者模式，选择“加载已解压的扩展程序”，加载`extensions/17lands-zh/.output/chrome-mv3/`。随后刷新17Lands页面；工具栏弹窗应显示“卡库连接正常”。中文默认开启，可随时切回英文，或点击“重试当前页面”。缺图而有译文时，页面右下角提供“查看中文牌文”；缓存数量与最近数据来源在折叠的“诊断信息”中，表示浏览器累计记录，不是当前页面汉化进度。无需17Lands token、Arena日志或账号配置。
+在`chrome://extensions`开启开发者模式，选择“加载已解压的扩展程序”，加载`extensions/17lands-zh/.output/chrome-mv3/`。随后刷新17Lands页面；工具栏弹窗应显示“卡库连接正常”。“显示中文”和“显示 17Lands 数据”默认开启，可独立关闭；任一开启时可点击“重试当前页面”。缺图而有译文时，页面右下角提供“查看中文牌文”。无需17Lands token、Arena日志或账号配置。
+
+统计仅显示在模拟轮抽、轮抽日志及回放的当前卡包，不加到已选牌区或悬浮大图。工具栏提供可见的17Lands来源链接及系列、赛制、套色、玩家分组和指标筛选；每张牌显示等级、胜率与ALSA，可打开详情。所有系列均按17Lands的上线日期执行12天保护期。统计在本机独立缓存6小时，更新失败可显示注明数据年龄的旧结果，不经过中文卡库。
 
 ## 本机后台服务
 
@@ -77,6 +79,8 @@ macOS可先停止前台serve，再执行：
 2. **卡库服务层**：精简Axum/Hyper/Tokio，SQLite WAL单写多读；使用磁盘scratch库准备完整数据后原子发布，HTTP读取不访问上游。默认监听`http://127.0.0.1:17317`，支持显式配置远程部署，只提供只读API及ETag。
 3. **扩展缓存层**：MV3后台批量查询；IndexedDB最多2000项，CacheStorage最多160张/64 MiB。图片经原生解码后才持久化；服务离线时可继续用已有缓存，缺图而有中文字时提供中文阅读面板。
 
+17Lands统计使用独立数据路径：后台不带Cookie读取`/api/card_data`及筛选目录，统计IndexedDB最多保存12组筛选、有效期6小时，目录有效期24小时。请求不包含轮抽ID、页面地址或个人选牌记录，不向Rust卡库转发统计。
+
 | API | 用途 |
 | --- | --- |
 | `/healthz` | 服务与SQLite基本健康状态 |
@@ -92,6 +96,7 @@ macOS可先停止前台serve，再执行：
 - 精确中文图缺失时，可用同Oracle/同卡面的其他中文印刷；插画可能变化，原始请求ID不变。没有中文图或文字时保留英文。
 - 服务默认只监听loopback，容器或远程模式需显式配置；不开放网络写接口。扩展只在17Lands运行，不读取Arena日志、token或账号资料，不上传个人选牌历史。
 - 上游会收到服务的公开资料请求；图源会收到所加载图片的公开卡牌ID。图片按需下载，不附带全库图片。
+- 17Lands会收到系列与筛选条件等公开统计请求及正常网络元数据；扩展仅按需读取聚合数据，不批量抓取、镜像或再分发。设置与缓存仅保存在本机。
 - Firefox MV3可构建，但实际运行尚未验收；Safari未提供包装。
 
 ## 参与开发
@@ -105,7 +110,8 @@ macOS可先停止前台serve，再执行：
 - 中文资料由[大学院废墟 mtgch](https://mtgch.com/)及其推荐的[magic-cards-zhs](https://github.com/HeliumOctahelide/magic-cards-zhs)提供。该资料仓库使用[CC BY-SA 4.0](https://github.com/HeliumOctahelide/magic-cards-zhs/blob/main/LICENSE-CC-BY-SA.txt)；译文可能来自官方文本、MTGso、Forge Data及志愿者。服务保留逐卡来源、来源链接与上游版本。再次分发资料或其改编时，应遵守相应署名及相同方式共享要求。
 - 英文卡牌身份来自上游资料中的[Scryfall](https://scryfall.com/)字段。中文图来自`images.mtgch.com`；扩展的图片来源白名单也允许`cards.scryfall.io`。仓库不附带全量卡图或实际中文数据库。
 - Magic: The Gathering卡牌名称、规则及图像等相关权利归Wizards of the Coast及相应权利人所有。中文资料许可不等于卡图版权授权。
-- [17Lands](https://www.17lands.com/)、mtgch、Scryfall与本项目无隶属或背书关系。本项目只处理浏览器中的中文展示，不包含17Lands客户端代码。
+- 公开聚合统计来自[17Lands](https://www.17lands.com/)，使用须遵守其[数据使用准则](https://www.17lands.com/usage_guidelines)。扩展保留顶层可见的来源链接，对所有系列执行12天保护期，只在17Lands页面按需展示，不批量抓取、镜像或再分发数据；MIT许可不覆盖这些统计资料。
+- 17Lands、mtgch、Scryfall与本项目无隶属或背书关系。本项目不包含17Lands客户端代码。
 
 ## 开源致谢
 

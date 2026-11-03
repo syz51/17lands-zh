@@ -71,11 +71,10 @@ UUID 必须为规范的连字符十六进制格式；接受大写并转小写。
 
 ```rust,ignore
 let mut writer = Writer::open(path)?;
-let revision = writer.publish_snapshot(|sink| {
+let revision = writer.publish_source_snapshot(&verified_release_and_hash, |sink| {
     provider::download(&mut |card| sink.insert(&card))?;
     Ok(())
 })?;
-writer.set_source_revision(&verified_release_and_hash)?;
 ```
 
 `SnapshotSink::insert(&CardRecord)` 同步流式写入，不累积整库。事务提交时原子切换 generation 并删除旧行；
@@ -88,9 +87,11 @@ WAL 让已开始的读取继续看到完整旧版本。空快照、下载/解析
 意外中断的 refreshing 状态在下一次取得写锁时记为 failed。运行时应启动时检查到期时间，
 之后在专用 writer OS 线程上等待/刷新；不能在 Tokio worker 上下载或调用 rusqlite。
 
-`source_revision()` 返回当前已发布 generation 的上游身份。完整导入成功后调用
-`set_source_revision`；若再次核实身份未变，调用 `mark_source_checked` 更新成功时间与下次检查时间，
-不改变内容 generation 或卡牌 `updated_at`。传入不同身份会被拒绝，新发布自动使旧身份失效。
+`source_revision()` 返回当前已发布 generation 的上游身份。`publish_source_snapshot` 将完整快照、
+来源身份及成功状态放在同一事务中提交；任一步失败均保留旧快照与来源，不存在先提交卡牌再补写来源的窗口。
+无来源的手动导入继续使用 `publish_snapshot`，成功发布后清除旧来源身份。若再次核实身份未变，
+调用 `mark_source_checked` 更新成功时间与下次检查时间，不改变内容 generation 或卡牌 `updated_at`；
+传入不同身份会被拒绝。
 
 ## 并发与内存边界
 

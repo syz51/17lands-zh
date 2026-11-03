@@ -61,6 +61,12 @@ export class ImageReplacer {
     this.scan(this.document.documentElement);
   }
 
+  originalSource(element: HTMLImageElement): string {
+    const current = element.getAttribute('src') ?? '';
+    const state = this.states.get(element)?.get('src');
+    return state && (current === state.applied || current === state.original) ? state.original : current;
+  }
+
   dispose() {
     this.disposed = true;
     this.enabled = false;

@@ -33,17 +33,21 @@ export class ReadingPanel {
     for (const event of ['pointerenter', 'focusin']) element.removeEventListener(event, entry.enter);
     for (const event of ['pointerleave', 'focusout']) element.removeEventListener(event, entry.leave);
     this.entries.delete(element);
-    if (this.active === element) { this.active = undefined; this.panel!.hidden = true; }
+    if (this.active === element) { this.active = undefined; this.hide(); }
     this.update();
   }
   clear() {
     for (const element of this.entries.keys()) this.remove(element);
+    this.active = undefined;
+    this.hide();
+  }
+  dispose() { this.clear(); this.host?.remove(); }
+  private hide() {
     if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = undefined; }
-    this.pinned = false; this.active = undefined;
+    this.pinned = false;
     if (this.panel) this.panel.hidden = true;
     this.launcher?.setAttribute('aria-expanded', 'false');
   }
-  dispose() { this.clear(); if (this.hideTimer) clearTimeout(this.hideTimer); this.host?.remove(); }
   private update() {
     if (!this.host) return;
     this.host.hidden = this.entries.size === 0;
@@ -58,7 +62,7 @@ export class ReadingPanel {
     if (activeIndex >= 0) this.select!.selectedIndex = activeIndex;
   }
   private show(element: Element) {
-    if (this.hideTimer) clearTimeout(this.hideTimer);
+    if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = undefined; }
     const entry = this.entries.get(element);
     if (!entry || !this.panel) return;
     this.active = element; this.panel.hidden = false;
@@ -73,7 +77,8 @@ export class ReadingPanel {
   private deferHide() {
     if (this.hideTimer) clearTimeout(this.hideTimer);
     this.hideTimer = setTimeout(() => {
-      if (!this.pinned && this.panel) { this.panel.hidden = true; this.launcher!.setAttribute('aria-expanded', 'false'); }
+      this.hideTimer = undefined;
+      if (!this.pinned) this.hide();
     }, 200);
   }
   private ensure() {
@@ -87,10 +92,9 @@ export class ReadingPanel {
     this.panel.id = 'zh-reading'; this.panel.setAttribute('role', 'region'); this.panel.setAttribute('aria-label', '中文牌文');
     const header = this.document.createElement('header'); const title = this.document.createElement('strong'); title.textContent = '中文牌文';
     const close = this.document.createElement('button'); close.type = 'button'; close.textContent = '关闭';
-    const hide = () => { this.pinned = false; this.panel!.hidden = true; this.launcher!.setAttribute('aria-expanded', 'false'); };
-    close.addEventListener('click', () => { hide(); this.launcher!.focus(); });
-    this.panel.addEventListener('keydown', (event) => { if (event.key === 'Escape') { hide(); this.launcher!.focus(); } });
-    this.panel.addEventListener('pointerenter', () => { if (this.hideTimer) clearTimeout(this.hideTimer); });
+    close.addEventListener('click', () => { this.hide(); this.launcher!.focus(); });
+    this.panel.addEventListener('keydown', (event) => { if (event.key === 'Escape') { this.hide(); this.launcher!.focus(); } });
+    this.panel.addEventListener('pointerenter', () => { if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = undefined; } });
     this.panel.addEventListener('pointerleave', () => this.deferHide());
     this.panel.addEventListener('focusin', () => { this.pinned = true; });
     header.append(title, close);
@@ -101,7 +105,7 @@ export class ReadingPanel {
     this.launcher = this.document.createElement('button'); this.launcher.type = 'button';
     this.launcher.setAttribute('aria-controls', 'zh-reading'); this.launcher.setAttribute('aria-expanded', 'false');
     this.launcher.addEventListener('click', () => {
-      if (!this.panel!.hidden) { hide(); return; }
+      if (!this.panel!.hidden) { this.hide(); return; }
       this.pinned = true;
       const element = this.active ?? this.entries.keys().next().value;
       if (element) { this.show(element); this.select!.focus(); }

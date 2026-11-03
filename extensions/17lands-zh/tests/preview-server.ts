@@ -9,7 +9,7 @@ globalThis.chrome = {
     async get() { return { enabled: localStorage.getItem('enabled') !== 'false' }; },
     async set(value) { localStorage.setItem('enabled', String(value.enabled)); }
   } },
-  tabs: { async query() { return [{ id: 1 }]; }, async sendMessage() { return { ok: true }; } }
+  tabs: { async query() { return [{ id: 1, url: new URLSearchParams(location.search).get('tab') ?? 'https://www.17lands.com/draft/sample' }]; }, async sendMessage() { return { ok: true }; } }
 };
 </script>`;
 

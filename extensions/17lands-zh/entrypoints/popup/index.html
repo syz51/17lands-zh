@@ -8,20 +8,32 @@
   </head>
   <body>
     <main>
-      <header><span class="mark" aria-hidden="true">中</span><h1>17Lands 中文卡图</h1></header>
-      <p>在 17Lands 卡包、已选牌与悬浮预览中显示中文。</p>
-      <label class="setting"><span>显示中文</span><input id="enabled" type="checkbox" role="switch" aria-describedby="fallback-hint" disabled /></label>
-      <p class="hint" id="fallback-hint">有中文卡图时自动替换；没有时保留英文原图。有译文时，可通过页面右下角的“查看中文牌文”阅读。</p>
+      <header><img class="mark" src="/icon/128.png" alt="" width="24" height="24" /><h1>17Lands 中文卡图</h1></header>
+      <p>在 17Lands 显示中文卡图，并在轮抽页的卡包下显示 17Lands 数据。</p>
+      <div id="controls">
+      <div class="settings">
+        <div class="setting">
+          <label for="enabled">显示中文</label>
+          <button class="info" type="button" aria-label="显示中文说明" aria-expanded="false" aria-controls="fallback-hint">?</button>
+          <p class="tip" id="fallback-hint" role="tooltip">有中文卡图时自动替换；没有时保留英文原图。有译文时，可通过页面右下角的“查看中文牌文”阅读。</p>
+          <input id="enabled" type="checkbox" role="switch" aria-describedby="fallback-hint" disabled />
+        </div>
+        <div class="setting">
+          <label for="stats-enabled">显示 17Lands 数据</label>
+          <button class="info" type="button" aria-label="显示 17Lands 数据说明" aria-expanded="false" aria-controls="stats-hint">?</button>
+          <p class="tip" id="stats-hint" role="tooltip">在轮抽页每张卡下显示 17Lands 等级、胜率和 ALSA。数据直接从 17Lands 读取，在本机缓存 6 小时，不经过中文卡库。</p>
+          <input id="stats-enabled" type="checkbox" role="switch" aria-describedby="stats-hint" disabled />
+        </div>
+      </div>
       <p id="service" role="status" aria-live="polite">正在检查卡库连接…</p>
       <button id="retry" type="button" disabled>重试当前页面</button>
       <p id="status" role="status" aria-live="polite">正在读取设置…</p>
-      <details>
-        <summary>诊断信息</summary>
-        <p id="cache">正在读取本机缓存…</p>
-        <p class="hint">累计保存的查询记录和图片，包含暂无资料的查询；不代表当前页面已汉化的卡牌数量。</p>
-        <p id="origin">最近数据来源：尚无记录。</p>
-        <p class="hint">该记录可能来自任意 17Lands 标签页，不代表图片已成功显示。</p>
-      </details>
+      </div>
+      <section id="elsewhere" class="elsewhere" hidden>
+        <h2>仅在 17Lands 页面可用</h2>
+        <p>打开 17Lands 后，可在这里开关中文卡图和 17Lands 数据。</p>
+        <a class="open" href="https://www.17lands.com/" target="_blank" rel="noreferrer">打开 17Lands ↗</a>
+      </section>
       <footer>
         中文资料与卡图：<a href="https://www.mtgch.com/" target="_blank" rel="noreferrer">大学院废墟 mtgch ↗</a><br />
         查询卡库时仅发送公开卡牌编号。<a href="https://github.com/syz51/17lands-zh/blob/main/docs/privacy.md" target="_blank" rel="noreferrer">隐私政策 ↗</a>
