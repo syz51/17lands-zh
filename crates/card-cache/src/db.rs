@@ -105,19 +105,6 @@ impl Writer {
     pub fn source_revision(&self) -> Result<Option<String>> {
         Ok(self.conn.query_row("SELECT source_revision FROM source_state WHERE generation=(SELECT current_generation FROM cache_state)", [], |r|r.get(0)).optional()?)
     }
-    /// Call after successful publication. Publishing another generation invalidates it.
-    pub fn set_source_revision(&mut self, revision: &str) -> Result<()> {
-        ensure!(
-            !revision.is_empty() && revision.len() <= 4096,
-            "invalid source revision"
-        );
-        let changed=self.conn.execute("INSERT INTO source_state(singleton,generation,source_revision) SELECT 1,g.id,?1 FROM cache_state s JOIN generations g ON g.id=s.current_generation WHERE g.card_count>0 ON CONFLICT(singleton) DO UPDATE SET generation=excluded.generation,source_revision=excluded.source_revision", [revision])?;
-        ensure!(
-            changed == 1,
-            "cannot associate a source release with an empty cache"
-        );
-        Ok(())
-    }
     /// Caller has rechecked the upstream release identity; no card rows are rewritten.
     pub fn mark_source_checked(&mut self, revision: &str) -> Result<()> {
         self.mark_source_checked_at(revision, now_seconds())
@@ -148,14 +135,47 @@ impl Writer {
     where
         F: FnOnce(&mut SnapshotSink<'_>) -> Result<()>,
     {
+        self.publish_at(now, None, load)
+    }
+    /// Atomically publish card data and the verified upstream identity backing it.
+    pub fn publish_source_snapshot<F>(&mut self, revision: &str, load: F) -> Result<String>
+    where
+        F: FnOnce(&mut SnapshotSink<'_>) -> Result<()>,
+    {
+        self.publish_source_snapshot_at(now_seconds(), revision, load)
+    }
+    pub fn publish_source_snapshot_at<F>(
+        &mut self,
+        now: i64,
+        revision: &str,
+        load: F,
+    ) -> Result<String>
+    where
+        F: FnOnce(&mut SnapshotSink<'_>) -> Result<()>,
+    {
+        ensure!(
+            !revision.is_empty() && revision.len() <= 4096,
+            "invalid source revision"
+        );
+        self.publish_at(now, Some(revision), load)
+    }
+    fn publish_at<F>(&mut self, now: i64, source_revision: Option<&str>, load: F) -> Result<String>
+    where
+        F: FnOnce(&mut SnapshotSink<'_>) -> Result<()>,
+    {
         self.mark_attempt_at(now)?;
-        let result = self.publish_inner(now, load);
+        let result = self.publish_inner(now, source_revision, load);
         if let Err(error) = &result {
             self.mark_failed(&format!("{error:#}"))?;
         }
         result
     }
-    fn publish_inner<F>(&mut self, now: i64, load: F) -> Result<String>
+    fn publish_inner<F>(
+        &mut self,
+        now: i64,
+        source_revision: Option<&str>,
+        load: F,
+    ) -> Result<String>
     where
         F: FnOnce(&mut SnapshotSink<'_>) -> Result<()>,
     {
@@ -183,6 +203,12 @@ impl Writer {
         )?;
         tx.execute("UPDATE cache_state SET current_generation=?1,last_success=?2,next_refresh=?2+?3,refresh_state='idle',last_error=NULL", params![generation,now,REFRESH_SECONDS])?;
         tx.execute("DELETE FROM generations WHERE id<>?1", [generation])?;
+        if let Some(revision) = source_revision {
+            tx.execute(
+                "INSERT INTO source_state(singleton,generation,source_revision) VALUES(1,?1,?2)",
+                params![generation, revision],
+            )?;
+        }
         tx.execute(
             "DELETE FROM provenance WHERE id NOT IN (SELECT provenance_id FROM localized_faces)",
             [],

@@ -6,7 +6,7 @@ const output = resolve(import.meta.dir, '../.output/chrome-mv3');
 const manifest = JSON.parse(await readFile(resolve(output, 'manifest.json'), 'utf8'));
 const same = (a: string[], b: string[]) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
 if (manifest.manifest_version !== 3 || !same(manifest.permissions ?? [], ['storage']) ||
-  !same(manifest.host_permissions ?? [], ['https://17lands.syzroy.com/*', 'https://images.mtgch.com/*', 'https://cards.scryfall.io/*']) ||
+  !same(manifest.host_permissions ?? [], ['https://17lands.syzroy.com/*', 'https://images.mtgch.com/*', 'https://cards.scryfall.io/*', 'https://www.17lands.com/*']) ||
   !same(manifest.content_scripts.flatMap((script: { matches: string[] }) => script.matches), ['https://17lands.com/*', 'https://www.17lands.com/*'])) {
   throw new Error('Store build must use the reviewed HTTPS origins and minimum permissions.');
 }

@@ -31,6 +31,7 @@ describe('live card image replacement', () => {
     replacer.setEnabled(true);
     await tick();
     expect(image.getAttribute('src')).toBe(chineseImageUrl(a)!);
+    expect(replacer.originalSource(image)).toBe(a);
     expect(image.srcset).toBe(`${chineseImageUrl(a)} 1x, ${chineseImageUrl(b)} 2x`);
     expect(image.alt).toBe('Return to the Light Realms');
     image.click();
@@ -48,6 +49,7 @@ describe('live card image replacement', () => {
     const image = document.querySelector('img')!;
     replacer.setEnabled(true);
     image.src = b;
+    expect(replacer.originalSource(image)).toBe(b);
     await tick();
     deferred.get(chineseImageUrl(a)!)!(true);
     await tick();
@@ -202,6 +204,57 @@ describe('live card image replacement', () => {
     expect(select.selectedOptions[0]!.textContent).toBe('沼泽');
     expect(panel.hidden).toBe(false);
     expect(panel.textContent).toContain('黑色法术力');
+    expect(root.querySelector('button[aria-controls]')!.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  for (const event of ['pointerenter', 'focusin']) {
+    test(`removing the pinned reading card allows ${event} to open a remaining card`, async () => {
+      const { document, replacer } = setup(async () => false, async (url) => ({
+        face: { ...card().faces[0]!, name_zh: url === a ? '平原' : '沼泽', oracle_text_zh: url === a ? '白色法术力' : '黑色法术力' },
+      }));
+      document.body.innerHTML = `<img src="${a}"><img src="${b}">`;
+      replacer.setEnabled(true); await tick();
+      const root = document.querySelector('[data-lands-zh-reader]')!.shadowRoot!;
+      const launcher = root.querySelector<HTMLButtonElement>('button[aria-controls]')!;
+      const panel = root.querySelector('section')!;
+      launcher.click();
+      expect(panel.hidden).toBe(false);
+      expect(panel.textContent).toContain('白色法术力');
+      document.body.querySelector('img')!.remove(); await tick();
+      expect(panel.hidden).toBe(true);
+      expect(launcher.getAttribute('aria-expanded')).toBe('false');
+      expect(document.querySelector<HTMLElement>('[data-lands-zh-reader]')!.hidden).toBe(false);
+      document.body.querySelector('img')!.dispatchEvent(new document.defaultView!.Event(event));
+      expect(panel.hidden).toBe(false);
+      expect(panel.textContent).toContain('黑色法术力');
+      expect(launcher.getAttribute('aria-expanded')).toBe('true');
+      expect(root.querySelector('select')!.selectedOptions[0]!.textContent).toBe('沼泽');
+    });
+  }
+
+  test('recycling the pinned reading card closes stale text and makes the new face hoverable', async () => {
+    const { document, replacer } = setup(async () => false, async (url) => ({
+      face: { ...card().faces[0]!, name_zh: url === a ? '平原' : '沼泽', oracle_text_zh: url === a ? '白色法术力' : '黑色法术力' },
+    }));
+    document.body.innerHTML = `<img alt="English" src="${a}">`;
+    const image = document.querySelector('img')!;
+    replacer.setEnabled(true); await tick();
+    const root = document.querySelector('[data-lands-zh-reader]')!.shadowRoot!;
+    const launcher = root.querySelector<HTMLButtonElement>('button[aria-controls]')!;
+    const panel = root.querySelector('section')!;
+    launcher.click();
+    expect(panel.textContent).toContain('白色法术力');
+    image.src = b; await tick();
+    expect(panel.hidden).toBe(true);
+    expect(launcher.getAttribute('aria-expanded')).toBe('false');
+    image.dispatchEvent(new document.defaultView!.Event('pointerenter'));
+    expect(panel.hidden).toBe(false);
+    expect(panel.textContent).toContain('黑色法术力');
+    expect(panel.textContent).not.toContain('白色法术力');
+    expect(launcher.getAttribute('aria-expanded')).toBe('true');
+    expect(root.querySelector('select')!.selectedOptions[0]!.textContent).toBe('沼泽');
+    expect(image.src).toBe(b);
+    expect(image.alt).toBe('English');
   });
 
   test('text remains openable after repeated refresh and disable/enable, and final disposal removes the host', async () => {

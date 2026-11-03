@@ -78,6 +78,17 @@ export class CardService {
     if (ids.length < 1 || ids.length > 100 || ids.some((id) => !UUID_RE.test(id))) return Promise.reject(new Error('无效的卡牌 ID'));
     return Promise.all(ids.map((id) => this.enqueue(id.toLowerCase())));
   }
+  async peek(ids: string[]): Promise<LookupResult[]> {
+    if (ids.length > 100 || ids.some((id) => !UUID_RE.test(id))) return [];
+    const entries = await this.metadata.get(ids).catch(() => []);
+    return entries.flatMap((entry, index): LookupResult[] => {
+      try {
+        if (!entry?.card || entry.id !== ids[index] || typeof entry.revision !== 'string') return [];
+        const card = parseCard(entry.card);
+        return card.printing_id === entry.id ? [{ id: entry.id, card, origin: 'cache', revision: entry.revision, fallback: false }] : [];
+      } catch { return []; }
+    });
+  }
   private enqueue(id: string) {
     const existing = this.pending.get(id);
     if (existing) return existing;

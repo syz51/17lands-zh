@@ -33,6 +33,18 @@ function fixture() {
 }
 
 describe('background local API and persistent cache', () => {
+  test('cached stats names can be read without a status check or network request', async () => {
+    const f = fixture();
+    const service = f.create();
+    expect(await service.peek([ID])).toEqual([]);
+    expect(f.requests).toHaveLength(0);
+    await service.lookup([ID]);
+    const count = f.requests.length;
+    expect((await service.peek([ID]))[0]?.card?.faces[0]?.name_zh).toBe('平原');
+    expect(f.requests).toHaveLength(count);
+    f.metadata.entries.set(ID, { ...f.metadata.entries.get(ID)!, card: { ...card(), printing_id: OTHER } });
+    expect(await service.peek([ID])).toEqual([]);
+  });
   test('default browser fetch retains the global receiver for metadata and images', async () => {
     const original = globalThis.fetch;
     const receivers: unknown[] = [];

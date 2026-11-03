@@ -1,4 +1,4 @@
-# 本地中文卡库架构
+# 中文卡库与扩展架构
 
 ## 数据模型
 
@@ -21,7 +21,7 @@ SQLite的可执行DDL位于`crates/card-cache/src/db.rs`，所有业务表带gen
 
 单一Writer持有进程级文件锁。SQLite开启WAL、foreign_keys、2秒busy_timeout、512 KiB page cache，禁用mmap，临时结果用磁盘。Reader只读且query_only；同一批查询在一个短事务内取得revision和卡牌，避免混合新旧快照。
 
-唯一OS线程检查持久日程；成功后24小时、失败后1小时。联网前保存attempt，重启不清除退避。先在scratch SQLite流式解析全量归档和完整目录，验证压缩长度、SHA256、tar/gzip完整性、分页与重复项，再以事务原子发布。错误或空快照回滚，保留旧版本。归档和图片目录共同构成source_revision；数据未变时只更新检查日程，不重写内容generation。
+唯一OS线程检查持久日程；成功后24小时、失败后1小时。联网前保存attempt，重启不清除退避。先在scratch SQLite流式解析全量归档和完整目录，验证压缩长度、SHA256、tar/gzip完整性、分页与重复项，再将快照、来源身份和成功状态放在同一事务中原子发布。错误或空快照回滚，保留旧版本及其来源。归档和图片目录共同构成source_revision；数据未变时只更新检查日程，不重写内容generation。
 
 HTTP使用2个Tokio worker、最多4个blocking worker及4个只读连接。连接上限32，请求/排队上限32，读池等待2秒；HTTP1请求头10秒、连接60秒期限。数据库查询和JSON序列化在线程池执行，HTTP路径不能下载或触发刷新。
 
@@ -29,8 +29,20 @@ HTTP使用2个Tokio worker、最多4个blocking worker及4个只读连接。连�
 
 ## 扩展
 
-内容脚本只传卡牌ID与front/back；MV3后台验证sender、schema、UUID和图片来源，再读取固定API。查询12ms合并、每批100、2批并发；图片4并发且限2 MiB，拒绝SVG和重定向，createImageBitmap验证并关闭bitmap后才保存。缓存读时重验旧坏图并删除重取。
+中文查询的内容脚本只传卡牌ID与front/back；MV3后台验证sender、schema、UUID和图片来源，再读取固定API。查询12ms合并、每批100、2批并发；图片4并发且限2 MiB，拒绝SVG和重定向，createImageBitmap验证并关闭bitmap后才保存。缓存读时重验旧坏图并删除重取。
 
 IndexedDB保存版本、ETag及最多2000条卡牌/缺失结果；正缓存24小时、负缓存5分钟。CacheStorage最多160张/64 MiB。离线可读取旧资料；状态每5分钟检查、离线退避1分钟，显式重试有5秒间隔。
 
-中文图可用则替换，保留英文alt与原始属性；没有图但有文字时提供Shadow DOM阅读面板，使用textContent安全渲染，支持键盘、hover和点击。刷新清空阅读状态而不销毁宿主，最终dispose才移除。开关和异步epoch避免复用节点收到上一张卡的结果。
+中文图可用则替换，保留英文alt与原始属性；没有图但有文字时提供Shadow DOM阅读面板，使用textContent安全渲染，支持键盘、hover和点击。当前阅读卡牌移除或复用时统一关闭面板，清除固定状态、隐藏定时器和展开标记；其他卡牌仍可通过悬停或聚焦打开。刷新清空阅读状态而不销毁宿主，最终dispose才移除。开关和异步epoch避免复用节点收到上一张卡的结果。
+
+## 17Lands公开聚合统计
+
+统计仅在17Lands的`/site_draft`、`/draft`、`/site_draft_replay`、`/submitted_draft`及`/user/latest_draft`当前卡包展示，已选牌区与悬浮大图不添加统计。工具栏顶层保留可见的17Lands来源链接；卡下按钮独立打开详情，不改变卡图的选牌行为。
+
+内容脚本读取公开卡牌身份及页面系列/赛制，将筛选条件交给MV3后台。后台仅向固定`https://www.17lands.com`源读取`/api/card_data`、`/data/filters`与`/data/site_draft_expansions`，不携带Cookie、页面地址、轮抽ID或账号资料。模拟轮抽可用已有公开印刷ID查询中文卡库以识别系列；17Lands统计及筛选结果绝不转发到卡库。
+
+目录中的`start_dates`用于所有系列的12天保护期检查，不能只保护最新系列；日期未确认时不展示可能受保护的数据。只按需查询公开聚合统计，不批量抓取、建立服务端镜像或再分发。来源和权利说明见[主README](../README.md#许可与第三方权利)。
+
+统计使用独立IndexedDB，TTL为6小时，最多保留12组系列/赛制/套色/玩家分组组合；目录TTL为24小时。更新失败保留旧快照，并在界面标明数据年龄。中文缓存的容量与失效机制独立运行。
+
+`storage.local`保存`statsEnabled`（默认true）、`statsPrefs`（`format`为`auto`或赛制代码，以及`colors`、`group`、`metric`）及`statsMockExpansion`。弹窗的两个开关独立控制中文和统计；任一开启时可重试当前页面，不通过Chrome Sync同步设置或缓存。

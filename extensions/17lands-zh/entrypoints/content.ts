@@ -2,6 +2,7 @@ import { browser } from 'wxt/browser';
 import { createImageLoader } from '../src/image-loader';
 import { ImageReplacer } from '../src/image-replacer';
 import { createServiceClient } from '../src/service-client';
+import { StatsOverlay } from '../src/stats-overlay';
 
 export default defineContentScript({
   matches: ['https://www.17lands.com/*', 'https://17lands.com/*'],
@@ -10,12 +11,24 @@ export default defineContentScript({
     const loader = createImageLoader();
     const client = createServiceClient((message) => browser.runtime.sendMessage(message));
     const replacer = new ImageReplacer(document, loader.load, client.resolve);
+    const stats = new StatsOverlay(document, {
+      send: (message) => browser.runtime.sendMessage(message),
+      originalSource: (image) => replacer.originalSource(image),
+      savePrefs: async (statsPrefs) => { await browser.storage.local.set({ statsPrefs }); },
+      saveMockExpansion: async (statsMockExpansion) => { await browser.storage.local.set({ statsMockExpansion }); },
+    });
     let revision = 0;
+    let statsEnabledRevision = 0;
+    let statsPrefsRevision = 0;
 
     const onChanged: Parameters<typeof browser.storage.onChanged.addListener>[0] = (changes, area) => {
       if (area === 'local' && changes.enabled) {
         revision++;
         replacer.setEnabled(changes.enabled.newValue !== false);
+      }
+      if (area === 'local' && (changes.statsEnabled || changes.statsPrefs)) {
+        if (changes.statsPrefs) { statsPrefsRevision++; stats.setPrefs(changes.statsPrefs.newValue); }
+        if (changes.statsEnabled) { statsEnabledRevision++; stats.setEnabled(changes.statsEnabled.newValue !== false); }
       }
     };
     const onMessage: Parameters<typeof browser.runtime.onMessage.addListener>[0] = (message, sender, respond) => {
@@ -24,6 +37,7 @@ export default defineContentScript({
       loader.clear();
       client.clear();
       replacer.refresh();
+      stats.refresh(true);
       respond({ ok: true });
     };
     browser.storage.onChanged.addListener(onChanged);
@@ -32,9 +46,11 @@ export default defineContentScript({
     const interval = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
       loader.clear(); client.clear(); replacer.refresh();
+      stats.refresh();
     }, 5 * 60_000);
     ctx.onInvalidated(() => {
       replacer.dispose();
+      stats.dispose();
       loader.dispose();
       client.dispose();
       clearInterval(interval);
@@ -43,7 +59,11 @@ export default defineContentScript({
     });
 
     const initialRevision = revision;
-    const { enabled } = await browser.storage.local.get('enabled');
+    const initialStatsEnabledRevision = statsEnabledRevision;
+    const initialStatsPrefsRevision = statsPrefsRevision;
+    const { enabled, statsEnabled, statsPrefs } = await browser.storage.local.get(['enabled', 'statsEnabled', 'statsPrefs']);
     if (ctx.isValid && revision === initialRevision) replacer.setEnabled(enabled !== false);
+    if (ctx.isValid && statsPrefsRevision === initialStatsPrefsRevision) stats.setPrefs(statsPrefs);
+    if (ctx.isValid && statsEnabledRevision === initialStatsEnabledRevision) stats.setEnabled(statsEnabled !== false);
   },
 });

@@ -289,12 +289,10 @@ fn reads_do_not_change_refresh_metadata_or_database() {
 #[test]
 fn unchanged_source_check_persists_freshness_without_generation_rewrite() {
     let (_dir, path, mut writer) = setup();
-    assert!(writer.set_source_revision("release1:hash").is_err());
     assert!(writer.mark_source_checked_at("release1:hash", 100).is_err());
     writer
-        .publish_snapshot_at(100, |s| s.insert(&card("release1")))
+        .publish_source_snapshot_at(100, "release1:hash", |s| s.insert(&card("release1")))
         .unwrap();
-    writer.set_source_revision("release1:hash").unwrap();
     writer.mark_attempt_at(100 + REFRESH_SECONDS).unwrap();
     assert!(
         writer
@@ -328,4 +326,141 @@ fn unchanged_source_check_persists_freshness_without_generation_rewrite() {
         .unwrap();
     assert_eq!(writer.source_revision().unwrap(), None);
     assert!(writer.mark_source_checked("release1:hash").is_err());
+}
+
+#[test]
+fn source_snapshot_and_cards_survive_reopen_together() {
+    let (_dir, path, mut writer) = setup();
+    writer
+        .publish_source_snapshot_at(100, "release1:hash", |sink| sink.insert(&card("release1")))
+        .unwrap();
+    let mut reader = Reader::open(&path).unwrap();
+    let observer = rusqlite::Connection::open(&path).unwrap();
+    writer
+        .publish_source_snapshot_at(200, "release2:hash", |sink| {
+            sink.insert(&card("release2"))?;
+            // Staging new cards must leave the entire previous publication visible.
+            let old = reader.cards(&[ID.into()], Language::Zhs)?;
+            assert_eq!(old.revision, "1");
+            assert_eq!(old.cards[0].english_name, "release1");
+            let source: (i64, String) = observer.query_row(
+                "SELECT generation,source_revision FROM source_state",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )?;
+            assert_eq!(source, (1, "release1:hash".into()));
+            Ok(())
+        })
+        .unwrap();
+    drop(writer);
+    let writer = Writer::open(&path).unwrap();
+    let published = reader.cards(&[ID.into()], Language::Zhs).unwrap();
+    assert_eq!(published.revision, "2");
+    assert_eq!(published.cards[0].english_name, "release2");
+    assert_eq!(
+        writer.source_revision().unwrap().as_deref(),
+        Some("release2:hash")
+    );
+    assert_eq!(writer.status().unwrap().refresh_state, "idle");
+    assert!(!writer.refresh_due_at(200 + REFRESH_SECONDS - 1).unwrap());
+}
+
+#[test]
+fn failed_source_publications_keep_previous_cards_and_source() {
+    let (_dir, path, mut writer) = setup();
+    writer
+        .publish_source_snapshot_at(100, "release1:hash", |sink| sink.insert(&card("release1")))
+        .unwrap();
+    let mut reader = Reader::open(&path).unwrap();
+    for failure in 0..3 {
+        let result = writer.publish_source_snapshot_at(200 + failure, "release2:hash", |sink| {
+            match failure {
+                0 => {
+                    sink.insert(&card("partial"))?;
+                    anyhow::bail!("truncated download")
+                }
+                1 => Ok(()),
+                _ => {
+                    sink.insert(&card("duplicate"))?;
+                    // Even an accidentally swallowed insert error poisons publication.
+                    let _ = sink.insert(&card("duplicate"));
+                    Ok(())
+                }
+            }
+        });
+        assert!(result.is_err());
+        let old = reader.cards(&[ID.into()], Language::Zhs).unwrap();
+        assert_eq!(old.revision, "1");
+        assert_eq!(old.cards[0].english_name, "release1");
+        assert_eq!(
+            writer.source_revision().unwrap().as_deref(),
+            Some("release1:hash")
+        );
+        assert_eq!(writer.status().unwrap().refresh_state, "failed");
+    }
+    drop(writer);
+    let writer = Writer::open(path).unwrap();
+    assert_eq!(writer.status().unwrap().revision, "1");
+    assert_eq!(
+        writer.source_revision().unwrap().as_deref(),
+        Some("release1:hash")
+    );
+}
+
+#[test]
+fn source_write_failure_rolls_back_generation_and_success_metadata() {
+    let (_dir, path, mut writer) = setup();
+    writer
+        .publish_source_snapshot_at(100, "release1:hash", |sink| sink.insert(&card("release1")))
+        .unwrap();
+    let before = writer.status().unwrap();
+    // Inject a storage failure at the source write, after generation switching
+    // and old-generation cleanup have run inside the publication transaction.
+    rusqlite::Connection::open(&path)
+        .unwrap()
+        .execute_batch(
+            "CREATE TRIGGER reject_source BEFORE INSERT ON source_state
+             BEGIN SELECT RAISE(ABORT, 'source write rejected'); END;",
+        )
+        .unwrap();
+    let error = writer
+        .publish_source_snapshot_at(200, "release2:hash", |sink| sink.insert(&card("release2")))
+        .unwrap_err();
+    assert!(error.to_string().contains("source write rejected"));
+    let after = writer.status().unwrap();
+    assert_eq!(after.revision, before.revision);
+    assert_eq!(after.card_count, before.card_count);
+    assert_eq!(after.last_success_at, before.last_success_at);
+    assert_eq!(after.refresh_state, "failed");
+    assert!(after.ready);
+    assert_eq!(writer.last_attempt_at().unwrap(), Some(200));
+    drop(writer);
+    let writer = Writer::open(&path).unwrap();
+    assert_eq!(
+        writer.source_revision().unwrap().as_deref(),
+        Some("release1:hash")
+    );
+    let published = Reader::open(path)
+        .unwrap()
+        .cards(&[ID.into()], Language::Zhs)
+        .unwrap();
+    assert_eq!(published.revision, "1");
+    assert_eq!(published.cards[0].english_name, "release1");
+}
+
+#[test]
+fn invalid_source_identity_is_rejected_before_loading_or_marking_an_attempt() {
+    let (_dir, _path, mut writer) = setup();
+    for revision in [String::new(), "x".repeat(4097)] {
+        let error = writer
+            .publish_source_snapshot_at(100, &revision, |_| {
+                panic!("invalid identity must be rejected before loading")
+            })
+            .unwrap_err();
+        assert!(error.to_string().contains("invalid source revision"));
+        assert_eq!(writer.source_revision().unwrap(), None);
+        assert_eq!(writer.last_attempt_at().unwrap(), None);
+        assert_eq!(writer.status().unwrap().revision, "0");
+        assert_eq!(writer.status().unwrap().refresh_state, "never");
+    }
 }

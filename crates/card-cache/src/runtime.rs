@@ -145,11 +145,10 @@ pub fn refresh_once(
             });
         }
         let mut report = None;
-        let revision = writer.publish_snapshot(|sink| {
+        let revision = writer.publish_source_snapshot(&source_revision, |sink| {
             report = Some(prepared.emit(&mut |card| sink.insert(&card))?);
             Ok(())
         })?;
-        writer.set_source_revision(&source_revision)?;
         // Only this owner touches the archive cache, and only known hash-named files
         // are evicted after a successful publication. Dataset snapshots remain in SQLite.
         if let Ok(entries) = fs::read_dir(&directory) {
