@@ -43,7 +43,7 @@ bun run zip:store
 
 1. 在Google Cloud独立项目启用Chrome Web Store API、IAM Service Account Credentials API和Security Token Service API，创建发布专用服务账号；不创建JSON密钥。
 2. 在Chrome Web Store开发者后台的Publisher → Settings绑定该服务账号邮箱。Google目前为每个publisher提供一个服务账号位置，绑定后它可经API管理该publisher的所有条目；本工作流只使用配置的扩展ID。商店资料、隐私声明及必要的账号验证需先完成。
-3. 创建GitHub OIDC的Workload Identity Pool及Provider，将`google.subject`映射到`assertion.sub`，并映射`repository_id`和`repository_owner_id`。Provider条件必须限制仓库及拥有者的数字ID、`repo:OWNER/REPO:environment:chrome-web-store`这个subject，以及精确的`assertion.job_workflow_ref == 'OWNER/REPO/.github/workflows/publish-chrome-web-store.yml@refs/heads/main'`。仅信任标签名称或仓库名称不足以保护商店发布权限。
+3. 创建GitHub OIDC的Workload Identity Pool及Provider，将`google.subject`映射到`assertion.sub`，并映射`repository_id`和`repository_owner_id`。先用`gh api repos/OWNER/REPO/actions/oidc/customization/sub`读取仓库实际subject配置；默认subject使用返回的`sub_claim_prefix`再拼接`:environment:chrome-web-store`。新仓库的前缀可能包含不可变的拥有者和仓库ID（如`repo:OWNER@OWNER_ID/REPO@REPO_ID`），不要硬编码旧的仅名称格式或关闭不可变subject。若仓库自定义了subject，须按其配置核对完整值。Provider条件必须同时限制该精确subject、仓库及拥有者的数字ID，以及精确的`assertion.job_workflow_ref == 'OWNER/REPO/.github/workflows/publish-chrome-web-store.yml@refs/heads/main'`。仅信任标签名称或仓库名称不足以保护商店发布权限。格式细节见[GitHub OIDC reference](https://docs.github.com/en/actions/reference/security/oidc#immutable-subject-claims)。
 4. 仅在该服务账号上向这个Provider的目标仓库principal授予`roles/iam.workloadIdentityUser`；不授予服务账号项目管理角色。
 5. 在仓库创建`chrome-web-store` GitHub Environment，设置以下非秘密变量。令牌由GitHub OIDC按次换取，无需repository secret或长期refresh token。
 
