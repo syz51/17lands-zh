@@ -29,7 +29,40 @@ bun run zip:store
 
 本机构建前清除用于远程构建的`WXT_API_ORIGIN`环境变量。两种Chrome包默认同名，会相互覆盖；每次生成后立即复制到发布目录，用`chrome-local`、`chrome-remote`和`firefox-local`等文件名明确区分。核对ZIP内manifest版本、卡库地址及权限，并提供SHA-256校验值。Release说明应说明各包的卡库要求、主要变化和实际验证范围；Firefox当前仅完成构建验证，不宣称已完成运行验收。GitHub自动提供源码归档；额外附件只包含安装包与校验文件，不上传数据库、缓存、日志、上游归档或测试夹具。
 
-创建GitHub Release不会上传Chrome Web Store，也不代表商店审核通过；商店提交遵循下述流程。
+完成下述账号连接后，正式GitHub Release会自动触发Chrome Web Store上传及审核提交；上传或送审成功不代表商店已经上架。
+
+## 自动提交 Chrome Web Store
+
+`.github/workflows/chrome-web-store.yml`在正式Release发布时触发，也支持从`main`手动重放已有正式标签。预发布和草稿不提交商店。入口调用固定在受保护`main`上的`publish-chrome-web-store.yml`，由后者执行全部校验、构建和认证。
+
+发布前会检查标签对应的提交属于`main`、版本与标签一致，并且该SHA的`Check`工作流由`main`的push触发，`rust`、`extension`和`container`均通过。然后校验Release远程版ZIP及`SHA256SUMS`，从标签提交按原lockfile重新构建商店包，逐文件比较两份ZIP的运行时内容；一致后才获取短期Google访问令牌并上传重新构建的包。
+
+发布任务使用统一队列，保留至多100个待运行任务，不取消正在上传的版本。已发布或已送审的相同版本可安全重跑；更新的商店版本、其他版本正在审核、来源不一致或不明确的上传失败会使任务停止，并在日志中说明原因。不会自动取消已有审核。审核中的版本完成后，可重跑对应失败任务。发布期间不要同时在开发者后台或其他API客户端上传同一条目。
+
+### 一次性账号连接
+
+1. 在Google Cloud独立项目启用Chrome Web Store API、IAM Service Account Credentials API和Security Token Service API，创建发布专用服务账号；不创建JSON密钥。
+2. 在Chrome Web Store开发者后台的Publisher → Settings绑定该服务账号邮箱。Google目前为每个publisher提供一个服务账号位置，绑定后它可经API管理该publisher的所有条目；本工作流只使用配置的扩展ID。商店资料、隐私声明及必要的账号验证需先完成。
+3. 创建GitHub OIDC的Workload Identity Pool及Provider，将`google.subject`映射到`assertion.sub`，并映射`repository_id`和`repository_owner_id`。Provider条件必须限制仓库及拥有者的数字ID、`repo:OWNER/REPO:environment:chrome-web-store`这个subject，以及精确的`assertion.job_workflow_ref == 'OWNER/REPO/.github/workflows/publish-chrome-web-store.yml@refs/heads/main'`。仅信任标签名称或仓库名称不足以保护商店发布权限。
+4. 仅在该服务账号上向这个Provider的目标仓库principal授予`roles/iam.workloadIdentityUser`；不授予服务账号项目管理角色。
+5. 在仓库创建`chrome-web-store` GitHub Environment，设置以下非秘密变量。令牌由GitHub OIDC按次换取，无需repository secret或长期refresh token。
+
+| Environment变量 | 内容 |
+| --- | --- |
+| `CWS_PUBLISHER_ID` | 开发者后台Publisher ID |
+| `CWS_EXTENSION_ID` | Chrome商店条目ID |
+| `CWS_WORKLOAD_IDENTITY_PROVIDER` | `projects/NUMBER/locations/global/workloadIdentityPools/POOL/providers/PROVIDER` |
+| `CWS_SERVICE_ACCOUNT` | 发布服务账号邮箱 |
+
+先运行只读验证：
+
+```console
+gh workflow run chrome-web-store.yml --ref main -f tag=v0.5.0 -f dry_run=true
+```
+
+它会校验Release、CI、安装包、认证和商店状态，不上传或送审。确认成功后，使用`dry_run=false`补发已有Release；后续正式Release自动提交，无需手动启动。工作流摘要区分`PENDING_REVIEW`、`STAGED`和`PUBLISHED`，实际审核结果仍以开发者后台为准。
+
+API仅负责安装包和审核提交，不同步商店介绍、截图或隐私表单；功能或权限变化时，仍应先维护下述商店资料。参考[Google服务账号说明](https://developer.chrome.com/docs/webstore/service-accounts)、[V2发布接口](https://developer.chrome.com/docs/webstore/api/reference/rest/v2/publishers.items/publish)和[GitHub可复用工作流OIDC说明](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-with-reusable-workflows)。
 
 ## 商店资料
 
