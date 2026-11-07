@@ -105,6 +105,8 @@ Docker系统包版本范围允许Debian修订及安全更新，升级发行版�
 
 开发环境、检查命令、PR流程及CI漏洞扫描见[贡献说明](CONTRIBUTING.md)，仓库开发约定见[AGENTS.md](AGENTS.md)。商店构建与资料见[发布说明](docs/publishing.md)，数据处理见[隐私政策](docs/privacy.md)。安全问题请按[SECURITY.md](SECURITY.md)私密报告。
 
+正式GitHub Release可通过GitHub Actions自动向Chrome Web Store上传并提交审核，采用服务账号与短期OIDC令牌；一次性账号连接、只读验证和失败重跑方式见[自动发布说明](docs/publishing.md#自动提交-chrome-web-store)。
+
 ## 许可与第三方权利
 
 本仓库应用代码使用[MIT License](LICENSE)。此许可不覆盖下载的卡牌资料、译文、卡图或依赖包；它们保留各自的许可及权利。
