@@ -90,7 +90,7 @@ Docker系统包版本范围允许Debian修订及安全更新，升级发行版�
 | `/v1/cards/{printing_id}?lang=zhs` | 单卡中文资料 |
 | `/v1/cards?ids=<UUID,...>&lang=zhs` | 最多100卡的批量查询 |
 
-数据schema、并发边界与更新流程见[架构说明](docs/architecture.md)，接口细节见[服务README](crates/card-cache/README.md)，扩展行为见[扩展README](extensions/17lands-zh/README.md)。
+数据schema、并发边界与更新流程见[架构说明](docs/architecture.md)，隐式状态及其已知缺口见[状态机清单](docs/state-machines.md)，接口细节见[服务README](crates/card-cache/README.md)，扩展行为见[扩展README](extensions/17lands-zh/README.md)。
 
 ## 覆盖与隐私
 
