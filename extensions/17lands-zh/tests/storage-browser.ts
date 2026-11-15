@@ -18,7 +18,12 @@ export async function runStorageQA() {
   const firstImageEvicted = (await images.get('https://images.mtgch.com/qa/0')) === undefined;
   const restored = await new PersistentImageStore().get(`https://images.mtgch.com/qa/${MAX_IMAGES}`);
   const oldVersionDeleted = !(await caches.keys()).includes('17lands-zh-images-v0');
-  return { count, evicted, restoredPrinting: newest?.card?.printing_id === ID, stats, firstImageEvicted, imageRestored: restored?.bytes.length === validRaster().bytes.length, oldVersionDeleted };
+  // A replaced entry moves to the end of the native cache order, and a new worker reads the same totals.
+  await images.put('https://images.mtgch.com/qa/1', validRaster()); await images.put('https://images.mtgch.com/qa/next', validRaster());
+  const replacedKept = (await images.get('https://images.mtgch.com/qa/1')) !== undefined && (await images.get('https://images.mtgch.com/qa/2')) === undefined;
+  const restarted = await new PersistentImageStore().stats(); const current = await images.stats();
+  const restartStatsEqual = restarted.imageCount === MAX_IMAGES && restarted.imageCount === current.imageCount && restarted.imageBytes === current.imageBytes;
+  return { replacedKept, restartStatsEqual, count, evicted, restoredPrinting: newest?.card?.printing_id === ID, stats, firstImageEvicted, imageRestored: restored?.bytes.length === validRaster().bytes.length, oldVersionDeleted };
 }
 
 /** Uses CardService's default production createImageBitmap decoder, not the Bun decoder double. */

@@ -23,6 +23,7 @@ export class CardService {
   private imageActive = 0;
   private readonly imageWaiters: (() => void)[] = [];
   private lastRetry = 0;
+  private persisted?: string;
 
   constructor(private readonly metadata: MetadataStore, private readonly images: ImageStore,
     private readonly fetcher: typeof fetch = globalThis.fetch.bind(globalThis), private readonly now: () => number = Date.now,
@@ -39,7 +40,14 @@ export class CardService {
   private async request(path: string, headers?: HeadersInit) {
     return this.fetcher(`${API_ORIGIN}${path}`, { headers, cache: 'no-store', credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(6000) });
   }
-  private async persist() { await this.metadata.saveControl({ status: this.status, nextAttempt: this.nextAttempt }).catch(() => {}); }
+  /** Lookups and images call this on every message; only a changed control record is written. */
+  private async persist() {
+    const control = { status: this.status, nextAttempt: this.nextAttempt };
+    const snapshot = JSON.stringify(control);
+    if (snapshot === this.persisted) return;
+    this.persisted = snapshot;
+    await this.metadata.saveControl(control).catch(() => { if (this.persisted === snapshot) this.persisted = undefined; });
+  }
   private offline(error: unknown) {
     this.status = { ...this.status, state: 'offline', checkedAt: this.now(), lastError: error instanceof Error ? error.message.slice(0, 256) : '本地服务不可用' };
     this.nextAttempt = this.now() + OFFLINE_BACKOFF;
@@ -166,8 +174,7 @@ export class CardService {
       this.status.lastResult = origin;
       return { id, card: entry?.card ?? null, origin, revision: entry?.revision ?? null, fallback: this.status.state === 'offline' || this.status.state === 'empty' };
     });
-    await this.metadata.put(touches).catch(() => {});
-    await this.persist();
+    await Promise.all([touches.length ? this.metadata.put(touches).catch(() => {}) : undefined, this.persist()]);
     return results;
   }
 

@@ -229,3 +229,20 @@ test('message boundary rejects foreign senders, arbitrary URLs, invalid IDs and 
   expect((await handle({ type: '17lands-zh:lookup', ids: [ID] }, site) as unknown[])).toHaveLength(1);
   expect((await handle({ type: '17lands-zh:status' }, popup) as { state: string }).state).toBe('online');
 });
+
+test('the control record is written only when it changes, and a failed write is retried', async () => {
+  const f = fixture(); const service = f.create(); let writes = 0; let fail = false;
+  const save = f.metadata.saveControl.bind(f.metadata);
+  f.metadata.saveControl = async (value) => { writes++; if (fail) throw new Error('write failed'); await save(value); };
+  await service.lookup([ID, OTHER]); await service.lookup([ID, OTHER]);
+  const afterFirst = writes; expect(afterFirst).toBeGreaterThan(0);
+  await service.lookup([ID, OTHER]);
+  await Promise.all([service.image(ID, 'front'), service.image(OTHER, 'front'), service.image(ID, 'front')]);
+  await service.image(ID, 'front');
+  expect(writes).toBe(afterFirst);
+  fail = true; f.advance(5 * 60_000); await service.lookup([ID]);
+  const failed = writes; expect(failed).toBeGreaterThan(afterFirst); expect(f.metadata.saved?.status.checkedAt).toBe(100_000);
+  fail = false; await service.lookup([ID]);
+  expect(writes).toBe(failed + 1); expect(f.metadata.saved?.status.checkedAt).toBe(400_000);
+  await service.lookup([ID]); expect(writes).toBe(failed + 1);
+});
