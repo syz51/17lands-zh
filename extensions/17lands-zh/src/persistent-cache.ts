@@ -74,6 +74,7 @@ const CACHE_NAME = '17lands-zh-images-v1';
 export class PersistentImageStore implements ImageStore {
   private serial: Promise<unknown> = Promise.resolve();
   private initialize?: Promise<Cache>;
+  private sizes?: Map<string, number>;
   private open() {
     return this.initialize ??= (async () => {
       for (const name of await caches.keys()) if (name.startsWith('17lands-zh-images-') && name !== CACHE_NAME) await caches.delete(name);
@@ -85,29 +86,43 @@ export class PersistentImageStore implements ImageStore {
     if (!response) return undefined;
     return { bytes: await boundedBytes(response, MAX_IMAGE_BYTES), mime: response.headers.get('content-type') ?? 'image/webp' };
   }
+  /** Stored sizes in cache insertion order. Reading every response again is only needed when the entry count disagrees. */
+  private async index(cache: Cache) {
+    const keys = await cache.keys();
+    if (this.sizes?.size === keys.length) return this.sizes;
+    const sizes = await Promise.all(keys.map(async (key) => Number((await cache.match(key))?.headers.get('content-length') ?? 0)));
+    return this.sizes = new Map(keys.map((key, i) => [key.url, sizes[i]!]));
+  }
+  private enqueue<T>(run: (cache: Cache) => Promise<T>) {
+    const operation = this.serial.catch(() => {}).then(async () => run(await this.open()));
+    this.serial = operation;
+    return operation;
+  }
   async put(url: string, image: CachedImage) {
-    const operation = this.serial.catch(() => {}).then(async () => {
-      const cache = await this.open();
+    await this.enqueue(async (cache) => {
+      const sizes = await this.index(cache); const key = new Request(url).url;
       await cache.put(url, new Response(image.bytes.slice().buffer, { headers: { 'content-type': image.mime, 'content-length': String(image.bytes.byteLength) } }));
-      const keys = await cache.keys(); let bytes = 0;
-      const sizes: number[] = [];
-      for (const key of keys) { const response = await cache.match(key); const size = Number(response?.headers.get('content-length') ?? 0); sizes.push(size); bytes += size; }
-      let count = keys.length;
-      for (let i = 0; count > MAX_IMAGES || bytes > MAX_IMAGE_CACHE_BYTES; i++) {
-        await cache.delete(keys[i]!); bytes -= sizes[i]!; count--;
+      // A replaced entry moves to the end of the cache, as it does in CacheStorage.
+      sizes.delete(key); sizes.set(key, image.bytes.byteLength);
+      let bytes = 0; for (const size of sizes.values()) bytes += size;
+      for (const [oldest, size] of sizes) {
+        if (sizes.size <= MAX_IMAGES && bytes <= MAX_IMAGE_CACHE_BYTES) break;
+        await cache.delete(oldest); sizes.delete(oldest); bytes -= size;
       }
     });
-    this.serial = operation;
-    await operation;
   }
   async delete(url: string) {
-    const operation = this.serial.catch(() => {}).then(async () => { await (await this.open()).delete(url); });
-    this.serial = operation;
-    await operation;
+    await this.enqueue(async (cache) => { await cache.delete(url); this.sizes?.delete(new Request(url).url); });
   }
+  /** Reads never wait for queued writes: the status reply uses the index when one exists. */
   async stats() {
-    const cache = await this.open(); const keys = await cache.keys(); let imageBytes = 0;
-    for (const key of keys) imageBytes += Number((await cache.match(key))?.headers.get('content-length') ?? 0);
-    return { imageCount: keys.length, imageBytes };
+    let sizes: Iterable<number> | undefined = this.sizes?.values();
+    if (!sizes) {
+      const cache = await this.open();
+      sizes = await Promise.all((await cache.keys()).map(async (key) => Number((await cache.match(key))?.headers.get('content-length') ?? 0)));
+    }
+    let imageCount = 0; let imageBytes = 0;
+    for (const size of sizes) { imageCount++; imageBytes += size; }
+    return { imageCount, imageBytes };
   }
 }
