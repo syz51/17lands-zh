@@ -1,4 +1,4 @@
-FROM rust:1.99.1-slim-bookworm AS build
+FROM rust:1.100.0-slim-bookworm AS build
 ARG DEBIAN_MIRROR=deb.debian.org
 # Version ranges allow Debian revisions and security updates.
 RUN sed -i "s|deb.debian.org|${DEBIAN_MIRROR}|g" /etc/apt/sources.list.d/debian.sources \
